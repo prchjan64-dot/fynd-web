@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FYND Marketplace</title>
+    <link rel="stylesheet" href="CSS/signin.css">
+     <link rel="icon" type="image/jpeg" href="image/logo2.0.jpg">
+</head>
+<body>
+
+    <main class="page-container">
+        <section class="account-card" aria-labelledby="page-title">
+
+            <div class="brand">
+                <img src="image/logo2.0.jpg" alt="FYND Logo" class="brand-logo">
+                <h1 id="page-title">Step Into FYND</h1>
+            </div>
+
+            <div class="account-section">
+                <h2 class="section-label">Log in</h2>
+                <p class="section-sub">Welcome back! Log in to your account.</p>
+
+                <form class="signin-form" id="login-form" novalidate>
+
+                    <!-- Email -->
+                    <div class="field-group">
+                        <label class="field-label" for="email">Email</label>
+                        <div class="field-wrap">
+                            <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="2" y="4" width="20" height="16" rx="3"></rect>
+                                <path d="m2 7 10 7 10-7"></path>
+                            </svg>
+                            <input
+                                id="email"
+                                class="field-input"
+                                type="email"
+                                name="email"
+                                placeholder="e.g, Reina04@gmail.com"
+                                autocomplete="email"
+                                inputmode="email"
+                                aria-describedby="email-error"
+                                required
+                            >
+                        </div>
+                        <p class="field-error" id="email-error" role="alert"></p>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="field-group">
+                        <label class="field-label" for="password">Password</label>
+                        <div class="field-wrap">
+                            <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <input
+                                id="password"
+                                class="field-input"
+                                type="password"
+                                name="password"
+                                placeholder="Enter your Password"
+                                autocomplete="current-password"
+                                aria-describedby="password-error"
+                                required
+                            >
+                            <button
+                                class="field-toggle"
+                                type="button"
+                                aria-label="Show password"
+                                aria-pressed="false"
+                                data-toggle-password="password"
+                            >
+                                <svg class="eye-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="field-error" id="password-error" role="alert"></p>
+                    </div>
+
+                    <!-- Forgot password -->
+                    <div class="forgot-row">
+                        <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
+                    </div>
+
+                    <!-- Server-side error message -->
+                    <p class="field-error" id="form-error" role="alert" style="text-align:center;"></p>
+
+                    <button class="signin-submit" type="submit">Log In</button>
+
+                </form>
+
+                <p class="signin-create">
+                    Don't have an account? <a href="create-account.html">Create an account</a>
+                </p>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        /* ---------- Show / hide password ---------- */
+        document.querySelectorAll("[data-toggle-password]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var input = document.getElementById(btn.dataset.togglePassword);
+                var isShowing = input.type === "text";
+                input.type = isShowing ? "password" : "text";
+                btn.setAttribute("aria-label", isShowing ? "Show password" : "Hide password");
+                btn.setAttribute("aria-pressed", String(!isShowing));
+            });
+        });
+
+        /* ---------- Validation ---------- */
+        var form          = document.getElementById("login-form");
+        var emailInput    = document.getElementById("email");
+        var passwordInput = document.getElementById("password");
+
+        function setError(input, message) {
+            var errorEl = document.getElementById(input.id + "-error");
+            if (errorEl) errorEl.textContent = message;
+            input.classList.toggle("is-invalid", message !== "");
+            input.setAttribute("aria-invalid", message !== "" ? "true" : "false");
+            return message === "";
+        }
+
+        function validateEmail() {
+            var v = emailInput.value.trim();
+            if (v === "") return setError(emailInput, "Please enter your email.");
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v))
+                return setError(emailInput, "Please enter a valid email address.");
+            return setError(emailInput, "");
+        }
+
+        function validatePassword() {
+            if (passwordInput.value === "") return setError(passwordInput, "Please enter your password.");
+            return setError(passwordInput, "");
+        }
+
+        emailInput.addEventListener("blur", validateEmail);
+        emailInput.addEventListener("input", function () {
+            if (emailInput.classList.contains("is-invalid")) validateEmail();
+        });
+
+        passwordInput.addEventListener("blur", validatePassword);
+        passwordInput.addEventListener("input", function () {
+            if (passwordInput.classList.contains("is-invalid")) validatePassword();
+        });
+
+        /* ---------- Submit → login.php ---------- */
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            var emailOk    = validateEmail();
+            var passwordOk = validatePassword();
+
+            if (!emailOk || !passwordOk) {
+                if (!emailOk) emailInput.focus();
+                else passwordInput.focus();
+                return;
+            }
+
+            var btn = form.querySelector(".signin-submit");
+            var formError = document.getElementById("form-error");
+            btn.disabled = true;
+            btn.textContent = "Logging in…";
+            formError.textContent = "";
+
+            fetch("login.php", { method: "POST", body: new FormData(form) })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    if (json.success) {
+                        window.location.href = json.redirect;
+                    } else {
+                        formError.textContent = json.message;
+                        btn.disabled = false;
+                        btn.textContent = "Log In";
+                    }
+                })
+                .catch(function () {
+                    formError.textContent = "Something went wrong. Please try again.";
+                    btn.disabled = false;
+                    btn.textContent = "Log In";
+                });
+        });
+    </script>
+
+</body>
+</html>

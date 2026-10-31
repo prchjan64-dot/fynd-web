@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FYND Marketplace</title>
+
+    <link rel="stylesheet" href="CSS/profile.css?v=3">
+    <!-- styles for the name display + log-out confirmation (must come after profile.css) -->
+    <link rel="stylesheet" href="CSS/user-session.css">
+    <!-- styles for the Cart tab (must come after profile.css) -->
+    <link rel="stylesheet" href="CSS/profile-cart.css">
+    <!-- styles for the Saved tab cards + product dialog (must come after profile.css) -->
+    <link rel="stylesheet" href="CSS/profile-saved.css">
+    <!-- styles for the Credit tab (must come after profile.css) -->
+    <link rel="stylesheet" href="CSS/profile-credit.css?v=2">
+
+    <script src="JS/profile.js" defer></script>
+    <!-- must load AFTER profile.js so the logged-in name always wins -->
+    <script src="JS/user-session.js" defer></script>
+    <!-- Cart tab logic -->
+    <script src="JS/profile-cart.js" defer></script>
+    <!-- Saved tab: shows the items starred on the storefront -->
+    <script src="JS/profile-saved.js" defer></script>
+    <!-- Credit tab: add-funds form (load after profile.js and profile-.js) -credit-->
+    <script src="JS/profile-credit.js?v=2" defer></script>
+     <link rel="icon" type="image/jpeg" href="image/logo2.0.jpg">
+
+
+</head>
+<!-- data-require-login sends visitors who are not logged in back to signin.html -->
+<body data-require-login>
+
+<div class="dashboard">
+
+    <!-- =====================================
+         SIDEBAR
+    ====================================== -->
+    <aside class="sidebar">
+        <div class="sidebar-top">
+
+            <div class="sidebar-label">
+                <img src="image/logo2.0.jpg" alt="FYND logo" class="sidebar-logo" width="28" height="28">
+                <span class="sidebar-brand">FYND</span>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Main navigation">
+
+                <a href="Fynd2.html" class="nav-link" data-page="storefront">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"></path>
+                    </svg>
+                    <span>Storefront</span>
+                </a>
+
+                <a href="profile.html" class="nav-link" data-page="profile">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="8" r="4"></circle>
+                        <path d="M4 21a8 8 0 0 1 16 0"></path>
+                    </svg>
+                    <span>Profile &amp; Account</span>
+                </a>
+
+                <a href="Seller-Studio.html" class="nav-link" data-page="seller">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M5 8h14l2 4v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7z"></path>
+                        <path d="M8 8V5a4 4 0 0 1 8 0v3"></path>
+                        <path d="M9 13h6"></path>
+                    </svg>
+                    <span>Seller Studio</span>
+                </a>
+
+            </nav>
+        </div>
+
+        <!-- Logged-in user + "Log out?" confirmation trigger -->
+        <a href="signin.html" class="sidebar-account" id="sidebar-account"
+           role="button" aria-haspopup="dialog"
+           aria-label="Account menu - log out"
+           data-logout-trigger>
+            <span class="avatar avatar-sidebar" data-user-initial>?</span>
+
+            <span class="sidebar-account-details">
+                <strong data-user-full>Guest</strong>
+                <small data-user-email>Not signed in</small>
+            </span>
+        </a>
+    </aside>
+
+
+    <!-- =====================================
+         MAIN CONTENT
+    ====================================== -->
+    <main class="main-content">
+
+        <!-- Profile header -->
+        <header class="profile-header">
+
+            <div class="welcome-section">
+                <div class="account-label">
+                    <span class="avatar avatar-small" data-user-initial>?</span>
+                    <span>YOUR ACCOUNT</span>
+                </div>
+
+                <h1 class="greeting"><span id="greeting" data-user-greeting>Good morning</span>, <span id="greeting-name" data-user-first>Guest</span><span id="greeting-dot">.</span></h1>
+                <p class="welcome-description">
+                    Here's what's happening with your FYNDs
+                </p>
+            </div>
+
+            <div class="header-actions">
+
+                <button
+                    class="notification-button"
+                    id="notificationButton"
+                    type="button"
+                    aria-label="Open notifications"
+                    aria-expanded="false"
+                    aria-controls="notificationPanel">
+
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                        <path d="M10 21h4"></path>
+                    </svg>
+                </button>
+
+                <a href="Fynd2.html" class="continue-button">
+                    <span>Continue<br>shopping</span>
+                    <span class="continue-arrow" aria-hidden="true">↗</span>
+                </a>
+
+                <!-- Notification popover -->
+                <section
+                    class="notification-panel"
+                    id="notificationPanel"
+                    aria-label="Notifications"
+                    hidden>
+
+                    <div class="notification-heading">
+                        <strong>Notifications</strong>
+                        <button
+                            type="button"
+                            id="closeNotifications"
+                            aria-label="Close notifications">
+                            ✕
+                        </button>
+                    </div>
+
+                    <p>
+                        You're all caught up. New order updates and account
+                        notifications will appear here.
+                    </p>
+                </section>
+
+            </div>
+        </header>
+
+
+        <!-- =================================
+             PROFILE TABS
+        ================================== -->
+        <nav class="profile-tabs" aria-label="Profile sections">
+
+            <a href="#profile"
+               class="tab active"
+               data-view="profile"
+               aria-current="page">
+                Profile
+            </a>
+
+            <a href="#orders"
+               class="tab"
+               data-view="orders">
+                Orders
+            </a>
+
+            <a href="#saved"
+               class="tab"
+               data-view="saved">
+                Saved
+            </a>
+
+            <a href="#cart"
+               class="tab"
+               data-view="cart">
+                Cart
+            </a>
+
+            <!-- NEW: Credit tab -->
+            <a href="#credit"
+               class="tab"
+               data-view="credit">
+                Credit
+            </a>
+
+        </nav>
+
+
+        <!-- =================================
+             PROFILE VIEW
+        ================================== -->
+        <section
+            id="profileView"
+            class="dashboard-view"
+            data-dashboard-view="profile"
+            aria-label="Profile overview">
+
+            <!-- Summary cards -->
+            <section class="stats-grid" aria-label="Account summary">
+
+                <article class="stat-card stat-green">
+                    <div class="stat-top">
+                        <span class="stat-icon dark-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="4" y="7" width="16" height="14" rx="3"></rect>
+                                <path d="M8 7V5a4 4 0 0 1 8 0v2"></path>
+                            </svg>
+                        </span>
+                        <span class="stat-label">ALL TIME</span>
+                    </div>
+
+                    <div class="stat-bottom">
+                        <strong class="stat-number">08</strong>
+                        <p>Total orders</p>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z"></path>
+                            </svg>
+                        </span>
+                        <span class="stat-label">3 PRICE DROPS</span>
+                    </div>
+
+                    <div class="stat-bottom">
+                        <!-- the number is the live count of starred items (JS/profile-saved.js) -->
+                        <strong class="stat-number" id="savedCount">0</strong>
+                        <p>Saved pieces</p>
+                    </div>
+                </article>
+
+                <!-- FYND credit: the number below is loaded from the
+                     wallets table by JS/profile-credit.js -->
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="4" y="5" width="16" height="15" rx="3"></rect>
+                                <path d="M8 5V3h8v2M8 10h8M8 14h5"></path>
+                            </svg>
+                        </span>
+                        <span class="stat-label">READY TO USE</span>
+                    </div>
+
+                    <div class="stat-bottom">
+                        <strong class="stat-number stat-currency"
+                                id="walletBalance"
+                                data-wallet-balance
+                                aria-live="polite">₱ --</strong>
+                        <p>FYND credit</p>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-top">
+                        <span class="stat-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="m12 2 2.5 6.5L21 11l-6.5 2.5L12 20l-2.5-6.5L3 11l6.5-2.5z"></path>
+                                <path d="m19 15 1.2 2.8L23 19l-2.8 1.2L19 23l-1.2-2.8L15 19l2.8-1.2z"></path>
+                            </svg>
+                        </span>
+                        <span class="stat-label">KG KEPT IN USE</span>
+                    </div>
+
+                    <div class="stat-bottom">
+                        <strong class="stat-number">96</strong>
+                        <p>Impact score</p>
+                    </div>
+                </article>
+
+            </section>
+
+
+            <!-- Dashboard panels -->
+            <section class="dashboard-panels">
+
+                <div class="left-panels">
+
+                    <!-- Recent orders -->
+                    <article class="panel recent-orders">
+                        <div class="panel-heading">
+                            <div>
+                                <span class="panel-eyebrow">IN MOTION</span>
+                                <h2>Recent orders</h2>
+                            </div>
+
+                            <a href="#orders"
+                               class="view-all"
+                               data-view="orders">
+                                View all
+                            </a>
+                        </div>
+
+                        <div class="order-card">
+
+                            <div class="order-product">
+                                <div class="product-thumb denim-thumb"
+                                     role="img"
+                                     aria-label="Product thumbnail"></div>
+
+                                <div class="order-details">
+                                    <strong>Cloudswift 3</strong>
+                                    <span>Mid Studio · Order #FY-2408</span>
+                                    <span class="order-status">IN TRANSIT</span>
+                                </div>
+
+                                <strong class="order-price">₱ 2,159</strong>
+                            </div>
+
+                            <div class="order-timeline">
+
+                                <div class="timeline-step">
+                                    <span class="timeline-dot">✓</span>
+                                    <span>Order confirmed</span>
+                                    <small>Sep 08</small>
+                                </div>
+
+                                <div class="timeline-step">
+                                    <span class="timeline-dot">✓</span>
+                                    <span>Packed by seller</span>
+                                    <small>Sep 09</small>
+                                </div>
+
+                                <div class="timeline-step">
+                                    <span class="timeline-dot">•</span>
+                                    <span>On the way</span>
+                                    <small>Arrives Sep 11</small>
+                                </div>
+
+                            </div>
+                        </div>
+                    </article>
+
+
+                    <!-- Recent delivery -->
+                    <article class="delivery-card">
+                        <span class="delivery-icon" aria-hidden="true">↻</span>
+
+                        <div class="delivery-details">
+                            <strong>90s Straight Denim</strong>
+                            <span>Delivered Aug 28 · ₱365</span>
+                        </div>
+
+                        <a href="#help"
+                           class="help-link"
+                           data-open-help
+                           aria-controls="helpPanel"
+                           aria-expanded="false">
+                            Need help?
+                        </a>
+                    </article>
+
+                </div>
+
+
+                <!-- Saved preview (the two newest starred items, filled by JS/profile-saved.js) -->
+                <article class="panel saved-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="panel-eyebrow">FOR YOUR EDITS</span>
+                            <h2>Saved for later</h2>
+                        </div>
+
+                        <span class="saved-star" aria-hidden="true">★</span>
+                    </div>
+
+                    <div id="savedPreviewList"></div>
+
+                    <a href="#saved"
+                       class="saved-action"
+                       data-view="saved">
+                        <span>Open your saved edit</span>
+                        <span aria-hidden="true">↗</span>
+                    </a>
+                </article>
+
+            </section>
+        </section>
+
+
+        <!-- =================================
+             ORDERS VIEW
+        ================================== -->
+        <section
+            id="ordersView"
+            class="dashboard-view"
+            data-dashboard-view="orders"
+            aria-label="Your orders"
+            hidden>
+
+            <article class="panel orders-page-panel">
+                <div class="panel-heading">
+                    <div>
+                        <span class="panel-eyebrow">IN MOTION</span>
+                        <h2>Your orders</h2>
+                    </div>
+                </div>
+
+                <div class="full-order-list">
+
+                    <article class="full-order-item">
+                        <div class="full-order-icon" aria-hidden="true">♧</div>
+
+                        <div class="full-order-details">
+                            <strong>Black Patent Flat Shoes</strong>
+                            <span>Classic Steps · Order #LM-2406</span>
+                        </div>
+
+                        <span class="full-order-status">In Transit</span>
+                        <strong class="full-order-price">₱350</strong>
+
+                        <button class="order-details-button"
+                                type="button"
+                                aria-label="View Black Patent Flat Shoes order details"
+                                aria-expanded="false"
+                                data-order-details="shoes">
+                            ›
+                        </button>
+                    </article>
+
+                    <div class="order-extra-details" data-order-info="shoes" hidden>
+                        <p><strong>Status:</strong> Your order is on its way.</p>
+                        <p><strong>Seller:</strong> Classic Steps</p>
+                        <p><strong>Order number:</strong> #LM-2406</p>
+                    </div>
+
+
+                    <article class="full-order-item">
+                        <div class="full-order-icon" aria-hidden="true">♧</div>
+
+                        <div class="full-order-details">
+                            <strong>Casual Long-Sleeve Shirt</strong>
+                            <span>Fashion Hub · Order #LM-2310</span>
+                        </div>
+
+                        <span class="full-order-status delivered-status">Delivered</span>
+                        <strong class="full-order-price">₱490</strong>
+
+                        <button class="order-details-button"
+                                type="button"
+                                aria-label="View Casual Long-Sleeve Shirt order details"
+                                aria-expanded="false"
+                                data-order-details="shirt">
+                            ›
+                        </button>
+                    </article>
+
+                    <div class="order-extra-details" data-order-info="shirt" hidden>
+                        <p><strong>Status:</strong> This order has been delivered.</p>
+                        <p><strong>Seller:</strong> Fashion Hub</p>
+                        <p><strong>Order number:</strong> #LM-2310</p>
+                    </div>
+
+                </div>
+            </article>
+        </section>
+
+
+        <!-- =================================
+             SAVED VIEW
+             The cards are built by JS/profile-saved.js from the items
+             starred on the storefront (same look as the product section).
+        ================================== -->
+        <section
+            id="savedView"
+            class="dashboard-view"
+            data-dashboard-view="saved"
+            aria-label="Saved items"
+            hidden>
+
+            <article class="panel saved-page-panel">
+                <div class="panel-heading">
+                    <div>
+                        <span class="panel-eyebrow">YOUR SHORTLIST</span>
+                        <h2>Saved pieces</h2>
+                    </div>
+                </div>
+
+                <div class="saved-products-grid" id="savedGrid" aria-live="polite"></div>
+            </article>
+        </section>
+
+
+        <!-- =================================
+             CART VIEW
+        ================================== -->
+        <section
+            id="cartView"
+            class="dashboard-view"
+            data-dashboard-view="cart"
+            aria-label="Your cart"
+            hidden>
+
+            <div class="cart-layout">
+
+                <article class="panel cart-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="panel-eyebrow">YOUR BAG</span>
+                            <h2>Your cart</h2>
+                        </div>
+
+                        <label class="cart-select-all" id="cartSelectAllWrap">
+                            <span class="cart-check">
+                                <input type="checkbox" id="cartSelectAll" checked>
+                                <span class="cart-box"></span>
+                            </span>
+                            Select all
+                        </label>
+                    </div>
+
+                    <ul class="cart-list" id="cartList"></ul>
+
+                    <p class="cart-empty" id="cartEmpty" hidden>
+                        Your cart is empty. <a href="Fynd2.html">Find something to love</a>
+                    </p>
+                </article>
+
+                <aside class="cart-side">
+                    <article class="panel cart-summary">
+                        <div class="panel-heading">
+                            <div>
+                                <span class="panel-eyebrow">ORDER</span>
+                                <h2>Summary</h2>
+                            </div>
+                        </div>
+
+                        <div class="cart-row"><span>Subtotal</span><span id="cartSubtotal">₱ 0</span></div>
+                        <div class="cart-row"><span>Estimated shipping</span><span id="cartShipping">₱ 0</span></div>
+                        <div class="cart-row"><span>Service fee</span><span id="cartService">₱ 0</span></div>
+
+                        <div class="cart-total">
+                            <span>Total</span>
+                            <span id="cartTotal">₱ 0</span>
+                        </div>
+
+                        <button type="button" class="cart-checkout" id="cartCheckout">
+                            <span id="cartCheckoutLabel">Checkout</span>
+                            <span aria-hidden="true">↗</span>
+                        </button>
+                    </article>
+
+                    <div class="cart-note">
+                        <a href="Fynd2.html" class="cart-continue">Continue shopping</a>
+                        <p>Items delivered in 3-5 business days.<br>Secure checkout.</p>
+                    </div>
+                </aside>
+
+            </div>
+        </section>
+
+
+        <!-- =================================
+             CREDIT VIEW (NEW)
+             Same look as the Cart: white rounded panels, lime accents,
+             black pill buttons, olive mono labels.
+        ================================== -->
+        <section
+            id="creditView"
+            class="dashboard-view"
+            data-dashboard-view="credit"
+            aria-label="FYND credit"
+            hidden>
+
+            <div class="credit-layout">
+
+                <article class="panel credit-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <span class="panel-eyebrow">YOUR CREDIT</span>
+                            <h2>In Wallet Balance</h2>
+                            <p class="credit-subtitle">Add funds to your wallet and keep shopping.</p>
+                        </div>
+                    </div>
+
+                    <!-- Balance bar -->
+                    <div class="credit-balance">
+                        <span class="credit-balance-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2"></path>
+                                <path d="M3 7h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1 0-4h5"></path>
+                            </svg>
+                        </span>
+
+                        <div class="credit-balance-text">
+                            <span class="credit-balance-label">WALLET BALANCE</span>
+                            <strong class="credit-balance-amount"
+                                    id="creditBalance"
+                                    aria-live="polite">₱ 0.00</strong>
+                        </div>
+                    </div>
+
+                    <!-- Input funds -->
+                    <form class="credit-form" id="creditForm" novalidate>
+                        <h3 class="credit-form-title">Input Funds</h3>
+
+                        <div class="credit-field">
+                            <label class="credit-label" for="creditMethod">Payment method</label>
+
+                            <div class="credit-select-wrap">
+                                <select class="credit-select" id="creditMethod" name="method" required>
+                                    <option value="" selected disabled>Select account</option>
+                                    <optgroup label="E-wallets">
+                                        <option value="gcash">GCash</option>
+                                        <option value="maya">Maya</option>
+                                    </optgroup>
+                                    <optgroup label="Banks">
+                                        <option value="bdo">BDO</option>
+                                        <option value="bpi">BPI</option>
+                                        <option value="metrobank">Metrobank</option>
+                                        <option value="unionbank">UnionBank</option>
+                                    </optgroup>
+                                </select>
+
+                                <svg class="credit-select-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="m6 9 6 6 6-6"></path>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="credit-row">
+                            <div class="credit-field">
+                                <label class="credit-label" for="creditAccount">Enter account number</label>
+
+                                <input class="credit-input"
+                                       type="text"
+                                       id="creditAccount"
+                                       name="account"
+                                       inputmode="numeric"
+                                       autocomplete="off"
+                                       maxlength="16"
+                                       placeholder="Enter account number">
+                            </div>
+
+                            <div class="credit-field">
+                                <label class="credit-label" for="creditAmount">Enter an amount</label>
+
+                                <input class="credit-input"
+                                       type="text"
+                                       id="creditAmount"
+                                       name="amount"
+                                       inputmode="decimal"
+                                       autocomplete="off"
+                                       maxlength="9"
+                                       placeholder="Enter an amount">
+                            </div>
+                        </div>
+
+                        <p class="credit-status" id="creditStatus" role="status" aria-live="polite" hidden></p>
+
+                        <button type="submit" class="credit-verify" id="creditVerify">
+                            <span id="creditVerifyLabel">Verify</span>
+                        </button>
+                    </form>
+
+                    <!-- Appears after Verify succeeds -->
+                    <div class="credit-success" id="creditSuccess" role="status" aria-live="polite" hidden>
+                        <span class="credit-success-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="m5 12.5 4.5 4.5L19 7.5"></path>
+                            </svg>
+                        </span>
+
+                        <h3 class="credit-success-title">Transfer Successfully!</h3>
+                        <p class="credit-success-text" id="creditSuccessText"></p>
+
+                        <button type="button" class="credit-verify" id="creditDone">Done</button>
+                    </div>
+                </article>
+
+                <aside class="credit-side">
+                    <div class="credit-note">
+                        <a href="#cart" class="credit-continue" data-view="cart">Back to your cart</a>
+                        <p>Funds are added to your FYND credit.<br>Secure payments.</p>
+                    </div>
+                </aside>
+
+            </div>
+        </section>
+
+
+        <!-- =================================
+             FOOTER
+        ================================== -->
+        <footer class="dashboard-footer" id="dashboardFooter">
+            <span>FYND · Keep good pieces moving.</span>
+            <a href="#help"
+               id="footerHelpLink"
+               data-open-help
+               aria-controls="helpPanel"
+               aria-expanded="false">
+                Need help?
+            </a>
+        </footer>
+
+
+        <!-- =================================
+             HELP PANEL
+        ================================== -->
+        <section
+            class="help-panel"
+            id="helpPanel"
+            role="region"
+            aria-label="Help and support"
+            hidden>
+
+            <div>
+                <h2>Need help?</h2>
+                <p>
+                    For order or account assistance,
+                    contact FYND support.
+                </p>
+            </div>
+
+            <button type="button" id="closeHelp">Close</button>
+        </section>
+
+    </main>
+</div>
+
+
+<!-- =====================================
+     PRODUCT DIALOG
+     Same dialog as the storefront. It opens from the "+" button
+     (or the photo) of a card on the Saved tab.
+====================================== -->
+<dialog class="product-dialog" id="product-dialog" aria-labelledby="product-dialog-title">
+    <div class="product-dialog-body">
+        <a href="#saved" class="product-dialog-back" id="product-dialog-back">← Back to saved pieces</a>
+
+        <div class="product-dialog-media">
+            <div class="product-dialog-image-wrap">
+                <img class="product-dialog-img" id="product-dialog-img" alt="">
+                <button type="button" class="product-dialog-favorite" id="product-dialog-favorite"
+                    aria-label="Remove from favorites" aria-pressed="true" title="Remove from favorites">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                            d="M12 3.5 14.6 8.8l5.9.9-4.25 4.15 1 5.85L12 16.9l-5.25 2.8 1-5.85L3.5 9.7l5.9-.9L12 3.5Z">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="product-dialog-info">
+            <div class="product-dialog-meta">
+                <span class="product-dialog-badge" id="product-dialog-condition"></span>
+                <span class="product-dialog-category" id="product-dialog-category"></span>
+            </div>
+
+            <h2 class="product-dialog-title" id="product-dialog-title"></h2>
+            <p class="product-dialog-price" id="product-dialog-price"></p>
+            <p class="product-dialog-seller" id="product-dialog-seller"></p>
+
+            <div class="product-dialog-section">
+                <h3 class="product-dialog-subtitle">Description</h3>
+                <p class="product-dialog-description" id="product-dialog-description"></p>
+            </div>
+
+            <p class="product-dialog-notice" id="product-dialog-notice" role="status" aria-live="polite" hidden></p>
+
+            <div class="product-dialog-actions">
+
+                <!-- Add to cart -->
+                <button type="button"
+                        class="product-dialog-add-cart"
+                        id="product-dialog-add-cart">
+
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         width="20" height="20"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         stroke-linecap="round"
+                         stroke-linejoin="round"
+                         aria-hidden="true">
+                        <path d="m2.05 2.05 1.099-.028a1 1 0 0 1 1.008.815l2.69 14.347A1 1 0 0 0 7.83 18H18"/>
+                        <path d="M4.563 5h16.435a1 1 0 0 1 .981 1.204l-1.026 6.226A2 2 0 0 1 18.962 14H6.25"/>
+                        <circle cx="18" cy="20" r="2"/>
+                        <circle cx="8" cy="20" r="2"/>
+                    </svg>
+
+                    <span>Add to cart</span>
+                </button>
+
+                <!-- Buy item -->
+                <button type="button"
+                        class="product-dialog-buy"
+                        id="product-dialog-buy">
+
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         width="20" height="20"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2"
+                         stroke-linecap="round"
+                         stroke-linejoin="round"
+                         aria-hidden="true">
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                        <path d="M3.103 6.034h17.794"/>
+                        <path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/>
+                    </svg>
+
+                    <span>Buy item</span>
+                </button>
+
+            </div>
+        </div>
+    </div>
+</dialog>
+
+</body>
+</html>

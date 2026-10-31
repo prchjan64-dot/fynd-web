@@ -1,0 +1,382 @@
+/* =========================
+   BASE STYLES
+========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #111111;
+    background: #ffffff;
+}
+
+button {
+    font: inherit;
+}
+
+/* =========================
+   PAGE LAYOUT
+========================= */
+
+.page-container {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* =========================
+   ACCOUNT CARD
+========================= */
+
+.account-card {
+    width: 100%;
+    max-width: 560px;
+    min-height: 600px;
+    padding: 48px 48px 48px;
+    border: 1px solid #555555;
+    border-radius: 24px;
+    background: #fbfcff;
+}
+
+/* =========================
+   BRAND AND LOGO
+========================= */
+
+.brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.brand-logo {
+    width: 60px;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 14px;
+}
+
+.brand h1 {
+    font-size: 27px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+/* =========================
+   ACCOUNT SECTION
+========================= */
+
+.account-section {
+    margin-top: 28px;
+}
+
+.section-label {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111111;
+    margin-bottom: 4px;
+}
+
+.section-sub {
+    font-size: 14px;
+    color: #555555;
+    margin-bottom: 24px;
+}
+
+/* =========================
+   SIGN IN FORM
+========================= */
+
+.signin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333333;
+}
+
+.field-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.field-icon {
+    position: absolute;
+    left: 13px;
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: #9aa0aa;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.field-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 42px 0 40px;
+    border: 1.5px solid #b8d6f5;
+    border-radius: 10px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 14px;
+    color: #111111;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field-input::placeholder {
+    color: #b0b4ba;
+}
+
+.field-input:focus {
+    border-color: #0a84ff;
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+}
+
+/* =========================
+   INVALID / REQUIRED STATE
+   (red border; used for empty required fields)
+========================= */
+
+.field-input.is-invalid {
+    border-color: #e5484d;
+}
+
+.field-input.is-invalid:focus {
+    border-color: #e5484d;
+    box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.14);
+}
+
+/* Icon turns red together with the border */
+.field-wrap:has(.field-input.is-invalid) .field-icon {
+    stroke: #e5484d;
+}
+
+/* =========================
+   ERROR TEXT
+   (only shown for wrong format, never for empty fields)
+========================= */
+
+.field-error {
+    font-size: 12px;
+    line-height: 1.3;
+    color: #d12f34;
+}
+
+.field-error:empty {
+    display: none;
+}
+
+.field-toggle {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: #9aa0aa;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.field-toggle:hover {
+    color: #555555;
+}
+
+.eye-icon {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* =========================
+   SUBMIT BUTTON
+========================= */
+
+.signin-submit {
+    width: 100%;
+    height: 50px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 999px;
+    background: #0a84ff;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.signin-submit:hover {
+    background: #0070e0;
+    box-shadow: 0 6px 18px rgba(10, 132, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.signin-submit:active {
+    background: #005ec2;
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.signin-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* =========================
+   CREATE ACCOUNT LINE
+========================= */
+
+.signin-create {
+    margin-top: 18px;
+    font-size: 14px;
+    color: #555555;
+    text-align: center;
+}
+
+.signin-create a {
+    color: #0a84ff;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.signin-create a:hover {
+    color: #0070e0;
+}
+
+.signin-create a:focus-visible {
+    outline: 3px solid #78aaff;
+    outline-offset: 3px;
+    border-radius: 3px;
+}
+
+/* =========================
+   TABLET RESPONSIVENESS
+========================= */
+
+@media (max-width: 600px) {
+    .page-container {
+        padding: 18px;
+    }
+
+    .account-card {
+        max-width: 520px;
+        min-height: 0;
+        padding: 40px 28px 40px;
+        border-radius: 22px;
+    }
+
+    .brand h1 {
+        font-size: 24px;
+    }
+
+    .account-section {
+        margin-top: 24px;
+    }
+}
+
+/* =========================
+   MOBILE RESPONSIVENESS
+========================= */
+
+@media (max-width: 380px) {
+    .page-container {
+        padding: 12px;
+    }
+
+    .account-card {
+        padding: 36px 18px 36px;
+        border-radius: 20px;
+    }
+
+    .brand-logo {
+        width: 52px;
+    }
+
+    .brand h1 {
+        font-size: 22px;
+    }
+
+    .account-section {
+        margin-top: 20px;
+    }
+
+    .section-label {
+        font-size: 18px;
+    }
+
+    .field-input {
+        height: 44px;
+        font-size: 13px;
+    }
+
+    .signin-submit {
+        height: 46px;
+        font-size: 15px;
+    }
+}
+
+/* =========================
+   ACCESSIBILITY
+========================= */
+
+.signin-submit:focus-visible,
+.field-toggle:focus-visible {
+    outline: 3px solid #78aaff;
+    outline-offset: 3px;
+}
+
+.field-input:focus-visible {
+    outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+    }
+}

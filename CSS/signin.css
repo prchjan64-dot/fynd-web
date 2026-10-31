@@ -1,0 +1,469 @@
+/* =========================
+   BASE STYLES
+========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #111111;
+    background: #ffffff;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* =========================
+   PAGE LAYOUT
+========================= */
+
+.page-container {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* =========================
+   ACCOUNT CARD (TALLER)
+========================= */
+
+.account-card {
+    width: 100%;
+    max-width: 560px;
+    min-height: 700px;
+    padding: 48px 48px;
+    border: 1px solid #555555;
+    border-radius: 24px;
+    background: #fbfcff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* =========================
+   BRAND AND LOGO
+========================= */
+
+.brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.brand-logo {
+    width: 60px;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 14px;
+}
+
+.brand h1 {
+    font-size: 27px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+/* =========================
+   ACCOUNT SECTION
+========================= */
+
+.account-section {
+    margin-top: 28px;
+}
+
+.section-label {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111111;
+    margin-bottom: 4px;
+}
+
+.section-sub {
+    font-size: 14px;
+    color: #555555;
+    margin-bottom: 26px;
+}
+
+/* =========================
+   FORM
+========================= */
+
+.signin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333333;
+}
+
+.field-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.field-icon {
+    position: absolute;
+    left: 13px;
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: #9aa0aa;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.field-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 42px 0 40px;
+    border: 1.5px solid #b8d6f5;
+    border-radius: 10px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 14px;
+    color: #111111;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field-input::placeholder {
+    color: #b0b4ba;
+}
+
+.field-input:focus {
+    border-color: #0a84ff;
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+}
+
+/* Invalid state */
+.field-input.is-invalid {
+    border-color: #e5484d;
+}
+
+.field-input.is-invalid:focus {
+    border-color: #e5484d;
+    box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.14);
+}
+
+.field-error {
+    font-size: 12px;
+    line-height: 1.3;
+    color: #d12f34;
+}
+
+.field-error:empty {
+    display: none;
+}
+
+.field-toggle {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: #9aa0aa;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.field-toggle:hover {
+    color: #555555;
+}
+
+.eye-icon {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* =========================
+   FORGOT PASSWORD LINK
+   (between the password field and Log In)
+========================= */
+
+.forgot-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -6px;
+}
+
+.forgot-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: #0a84ff;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+    color: #0070e0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* =========================
+   SUCCESS / ERROR MESSAGE
+   (used on forgot-password.html)
+========================= */
+
+.form-message {
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.form-message:empty {
+    display: none;
+}
+
+.form-message.success {
+    color: #1a7f37;
+}
+
+.form-message.error {
+    color: #d12f34;
+}
+
+/* =========================
+   SUBMIT BUTTON
+========================= */
+
+.signin-submit {
+    width: 100%;
+    height: 50px;
+    margin-top: 4px;
+    border: none;
+    border-radius: 999px;
+    background: #0a84ff;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.signin-submit:hover {
+    background: #0070e0;
+    box-shadow: 0 6px 18px rgba(10, 132, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.signin-submit:active {
+    background: #005ec2;
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.signin-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* =========================
+   "DON'T HAVE AN ACCOUNT?" (CENTERED)
+========================= */
+
+.signin-create {
+    display: block;
+    width: 100%;
+    margin-top: 22px;
+    text-align: center;
+    font-size: 14px;
+    color: #555555;
+}
+
+.signin-create a {
+    margin-left: 4px;
+    color: #0a84ff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.signin-create a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* =========================
+   TABLET RESPONSIVENESS
+========================= */
+
+@media (max-width: 600px) {
+    .page-container {
+        padding: 18px;
+    }
+
+    .account-card {
+        max-width: 520px;
+        min-height: 0;
+        padding: 40px 28px;
+        border-radius: 22px;
+    }
+
+    .brand h1 {
+        font-size: 24px;
+    }
+
+    .account-section {
+        margin-top: 24px;
+    }
+}
+
+/* =========================
+   MOBILE RESPONSIVENESS
+========================= */
+
+@media (max-width: 380px) {
+    .page-container {
+        padding: 12px;
+    }
+
+    .account-card {
+        padding: 32px 18px;
+        border-radius: 20px;
+    }
+
+    .brand-logo {
+        width: 52px;
+    }
+
+    .brand h1 {
+        font-size: 22px;
+    }
+
+    .account-section {
+        margin-top: 20px;
+    }
+
+    .section-label {
+        font-size: 20px;
+    }
+
+    .signin-form {
+        gap: 14px;
+    }
+
+    .field-input {
+        height: 44px;
+        font-size: 13px;
+    }
+
+    .signin-submit {
+        height: 46px;
+        font-size: 15px;
+    }
+
+    .signin-create {
+        font-size: 13px;
+    }
+}
+
+/* =========================
+   SHORT LANDSCAPE SCREENS
+========================= */
+
+@media (max-height: 520px) and (orientation: landscape) {
+    .page-container {
+        align-items: flex-start;
+        padding: 12px;
+    }
+
+    .account-card {
+        min-height: 0;
+    }
+}
+
+/* =========================
+   TOUCH DEVICES
+   (16px inputs stop iOS from zooming on focus)
+========================= */
+
+@media (hover: none) and (pointer: coarse) {
+    .field-input {
+        font-size: 16px;
+    }
+
+    .field-toggle {
+        width: 36px;
+        height: 36px;
+        right: 8px;
+    }
+}
+
+/* =========================
+   ACCESSIBILITY
+========================= */
+
+.signin-submit:focus-visible,
+.field-toggle:focus-visible,
+.forgot-link:focus-visible,
+.signin-create a:focus-visible {
+    outline: 3px solid #78aaff;
+    outline-offset: 3px;
+    border-radius: 3px;
+}
+
+.field-input:focus-visible {
+    outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+    }
+}

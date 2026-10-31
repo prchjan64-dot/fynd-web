@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FYND Marketplace</title>
+    <link rel="stylesheet" href="CSS/seller-studio.css?v=3">
+    <!-- NEW: styles for the name display + log-out confirmation (must come after seller-studio.css) -->
+    <link rel="stylesheet" href="CSS/user-session.css">
+     <link rel="icon" type="image/jpeg" href="image/logo2.0.jpg">
+
+    <!-- NEW: styling for the Description textarea in the listing form.
+         Kept here so seller-studio.css does not need to change. -->
+    <style>
+        .form-textarea {
+            display: block;
+            width: 100%;
+            height: auto;
+            min-height: 110px;
+            padding-top: 12px;
+            padding-bottom: 12px;
+            line-height: 1.5;
+            font-family: inherit;
+            resize: vertical;
+        }
+    </style>
+
+</head>
+<!-- NEW: data-require-login sends visitors who are not logged in back to signin.html -->
+<body data-require-login>
+    <div class="dashboard">
+
+        <!-- Mobile backdrop -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-top">
+                <div class="sidebar-label">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+                        <path d="M9 3v18"></path>
+                    </svg>
+                    <span>Navigation</span>
+                    <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Close navigation">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 6l12 12M18 6 6 18"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <nav class="sidebar-nav" aria-label="Main navigation">
+                    <a href="Fynd2.html" class="nav-link" data-page="storefront">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"></path>
+                        </svg>
+                        <span>Storefront</span>
+                    </a>
+
+                    <a href="profile.html" class="nav-link" data-page="profile">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="8" r="4"></circle>
+                            <path d="M4 21a8 8 0 0 1 16 0"></path>
+                        </svg>
+                        <span>Profile &amp; Account</span>
+                    </a>
+
+                    <a href="Seller-Studio.html" class="nav-link active" data-page="seller" aria-current="page">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M5 8h14l2 4v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7z"></path>
+                            <path d="M8 8V5a4 4 0 0 1 8 0v3"></path>
+                            <path d="M9 13h6"></path>
+                        </svg>
+                        <span>Seller Studio</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- CHANGED: shows the logged-in user and opens the "Log out?" confirmation.
+                 Kept as an <a> so your existing sidebar-account styling is untouched;
+                 the href is only a fallback if JavaScript fails. -->
+            <a href="signin.html" class="sidebar-account" id="sidebar-account"
+               role="button" aria-haspopup="dialog"
+               aria-label="Account menu - log out"
+               data-logout-trigger>
+                <span class="avatar avatar-sidebar" data-user-initial>?</span>
+                <span class="sidebar-account-details">
+                    <strong data-user-full>Guest</strong>
+                    <small data-user-email>Not signed in</small>
+                </span>
+            </a>
+        </aside>
+
+        <!-- Mobile top bar -->
+        <div class="mobile-bar">
+            <button type="button" class="menu-toggle" id="menu-toggle"
+                    aria-label="Open navigation"
+                    aria-controls="sidebar"
+                    aria-expanded="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+                    <path d="M9 3v18"></path>
+                </svg>
+            </button>
+            <span class="mobile-bar-title">Seller Studio</span>
+        </div>
+
+        <!-- Main content -->
+        <main class="main-content">
+
+            <header class="profile-header">
+                <div class="welcome-section">
+                    <div class="account-label">
+                        <span class="avatar avatar-small" data-user-initial>?</span>
+                        <span>SELLER STUDIO</span>
+                    </div>
+
+                    <!-- CHANGED: name now comes from the logged-in session -->
+                    <h1 class="greeting" id="greeting">
+                        <span id="greeting-text" data-user-greeting>Good morning</span>,
+                        <span id="greeting-name" data-user-first>Guest</span><span class="greeting-dot">.</span>
+                    </h1>
+
+                    <p class="welcome-description">
+                        A clear view of your shop, from listing to payout.
+                    </p>
+                </div>
+
+                <div class="header-actions">
+                    <button type="button" class="icon-button" aria-label="Notifications">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 9a6 6 0 0 1 12 0c0 6 2 7.5 2 7.5H4S6 15 6 9z"></path>
+                            <path d="M10 20a2 2 0 0 0 4 0"></path>
+                        </svg>
+                    </button>
+
+                    <a href="Fynd2.html" class="continue-button">
+                        <span>View storefront</span>
+                        <span class="continue-arrow" aria-hidden="true">↗</span>
+                    </a>
+                </div>
+            </header>
+
+            <noscript>
+                <p class="noscript-note">
+                    Seller Studio needs JavaScript to show your listings, orders and payouts.
+                </p>
+            </noscript>
+
+            <!-- Tabs -->
+            <div class="tabs" role="tablist" aria-label="Seller Studio sections">
+                <button type="button" class="tab" role="tab"
+                        id="tab-listings" data-tab="listings"
+                        aria-controls="panel-listings" aria-selected="true">
+                    Listings
+                </button>
+
+                <button type="button" class="tab" role="tab"
+                        id="tab-orders" data-tab="orders"
+                        aria-controls="panel-orders" aria-selected="false" tabindex="-1">
+                    Orders
+                </button>
+
+                <button type="button" class="tab" role="tab"
+                        id="tab-payouts" data-tab="payouts"
+                        aria-controls="panel-payouts" aria-selected="false" tabindex="-1">
+                    Payouts
+                </button>
+            </div>
+
+            <!-- Listings -->
+            <section class="panel-card" id="panel-listings"
+                     role="tabpanel" aria-labelledby="tab-listings">
+                <div class="panel-head">
+                    <div>
+                        <p class="eyebrow">YOUR CLOSET, IN PUBLIC</p>
+                        <h2>Active listings</h2>
+                    </div>
+
+                    <button type="button" class="primary-button" id="new-listing-btn">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                        <span>New listing</span>
+                    </button>
+                </div>
+
+                <ul class="item-list" id="listing-list"></ul>
+                <p class="empty-state" id="listing-empty" hidden>
+                    You have no listings yet. Use “New listing” to add your first piece.
+                </p>
+            </section>
+
+            <!-- Orders -->
+            <section class="panel-card" id="panel-orders"
+                     role="tabpanel" aria-labelledby="tab-orders" hidden>
+                <div class="panel-head">
+                    <div>
+                        <p class="eyebrow">WHAT'S MOVING</p>
+                        <h2>Orders</h2>
+                    </div>
+                </div>
+
+                <ul class="item-list" id="order-list"></ul>
+                <p class="empty-state" id="order-empty" hidden>
+                    No orders yet. They will show up here as soon as someone buys.
+                </p>
+            </section>
+
+            <!-- Payouts (CHANGED: available balance card + recent payout activity table) -->
+            <section class="panel-card" id="panel-payouts"
+                     role="tabpanel" aria-labelledby="tab-payouts" hidden>
+
+                <!-- Available balance -->
+                <div class="balance-card">
+                    <div class="balance-main">
+                        <span class="balance-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 9V7a2 2 0 0 1 2-2h11v4"></path>
+                                <rect x="3" y="7" width="18" height="13" rx="3"></rect>
+                                <path d="M16 13.5h5v3.5h-5a1.75 1.75 0 0 1 0-3.5z"></path>
+                            </svg>
+                        </span>
+
+                        <div class="balance-text">
+                            <p class="balance-label">Available balance</p>
+                            <p class="balance-value" id="payout-balance">&#8369;0.00</p>
+                        </div>
+                    </div>
+
+                    <button type="button" class="primary-button" id="transfer-funds-btn">
+                        <span>Transfer funds</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M5 12h14M13 6l6 6-6 6"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <p class="transfer-note" id="transfer-note" role="status" hidden></p>
+
+                <!-- Recent payout activity -->
+                <div class="panel-head payout-head">
+                    <h2>Recent payout activity</h2>
+                </div>
+
+                <div class="payout-table-wrap" id="payout-table-wrap">
+                    <table class="payout-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Date</th>
+                                <th scope="col">Description</th>
+                                <th scope="col">Method</th>
+                                <th scope="col">Status</th>
+                                <th scope="col" class="col-amount">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payout-list"></tbody>
+                    </table>
+                </div>
+
+                <p class="empty-state" id="payout-empty" hidden>
+                    No payouts yet. Your first one appears after an order is completed.
+                </p>
+            </section>
+
+            <footer class="dashboard-footer">
+                <span>FYND · Keep good pieces moving.</span>
+            </footer>
+
+        </main>
+    </div>
+
+    <!-- New / Edit listing dialog -->
+    <dialog class="modal" id="listing-dialog" aria-labelledby="listing-dialog-title">
+        <form class="modal-form" id="listing-form" novalidate>
+            <div class="modal-head">
+                <div>
+                    <p class="eyebrow">YOUR CLOSET, IN PUBLIC</p>
+                    <h3 id="listing-dialog-title">New listing</h3>
+                </div>
+
+                <button type="button" class="icon-button"
+                        data-dialog-close aria-label="Close">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6 6 18"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Item name -->
+            <div class="form-field">
+                <label class="form-label" for="listing-title">Item name</label>
+                <input class="form-input" id="listing-title" name="title"
+                       type="text" maxlength="60"
+                       placeholder="e.g., Cloudswift 3"
+                       autocomplete="off"
+                       aria-describedby="listing-title-error">
+                <p class="field-error" id="listing-title-error" role="alert"></p>
+            </div>
+
+            <!-- Category and size -->
+            <div class="form-row">
+                <div class="form-field">
+                    <label class="form-label" for="listing-category">Category</label>
+                    <select class="form-input" id="listing-category"
+                            name="category"
+                            aria-describedby="listing-category-error">
+                        <option value="Shoes">Shoes</option>
+                        <option value="T-shirts">T-shirts</option>
+                        <option value="Pants">Pants</option>
+                        <option value="Jackets">Jackets</option>
+                        <option value="Accessories">Accessories</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <p class="field-error" id="listing-category-error" role="alert"></p>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="listing-size">
+                        Size <span class="form-optional">(optional)</span>
+                    </label>
+                    <input class="form-input" id="listing-size" name="size"
+                           type="text" maxlength="12"
+                           placeholder="e.g., EU 39, L, W28"
+                           autocomplete="off"
+                           aria-describedby="listing-size-error">
+                    <p class="field-error" id="listing-size-error" role="alert"></p>
+                </div>
+            </div>
+
+            <!-- Price and item condition -->
+            <div class="form-row">
+                <div class="form-field">
+                    <label class="form-label" for="listing-price">Price</label>
+                    <input class="form-input" id="listing-price" name="price"
+                           type="number" min="0" step="0.01"
+                           inputmode="decimal" placeholder="e.g., 120"
+                           aria-describedby="listing-price-error">
+                    <p class="field-error" id="listing-price-error" role="alert"></p>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="listing-condition">
+                        Item condition
+                    </label>
+                    <select class="form-input" id="listing-condition"
+                            name="condition"
+                            aria-describedby="listing-condition-error">
+                        <option value="Like new">Like new</option>
+                        <option value="Good" selected>Good</option>
+                        <option value="Fair">Fair</option>
+                    </select>
+                    <p class="field-error" id="listing-condition-error" role="alert"></p>
+                </div>
+            </div>
+
+            <!-- NEW: Item description (required) -->
+            <div class="form-field">
+                <label class="form-label" for="listing-description">Description</label>
+                <textarea class="form-input form-textarea" id="listing-description"
+                          name="description" rows="4" maxlength="1000"
+                          placeholder="Describe the item: brand, material, fit, any flaws, and anything a buyer should know."
+                          aria-required="true"
+                          aria-describedby="listing-description-error"></textarea>
+                <p class="field-error" id="listing-description-error" role="alert"></p>
+            </div>
+
+            <!-- Item photo -->
+            <div class="form-field">
+                <span class="form-label">
+                    Photo <span class="form-optional">(optional)</span>
+                </span>
+
+                <div class="image-upload">
+                    <input class="image-input" id="listing-image" name="image"
+                           type="file"
+                           accept="image/jpeg,image/png,image/webp"
+                           aria-describedby="listing-image-error">
+
+                    <!-- Shown when no photo is selected -->
+                    <label class="image-dropzone" id="listing-image-dropzone"
+                           for="listing-image">
+                        <span class="image-dropzone-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+                                <circle cx="9" cy="11" r="1.8"></circle>
+                                <path d="m21 16-5-5-8 8"></path>
+                            </svg>
+                        </span>
+
+                        <span class="image-dropzone-text">
+                            <strong>Add a photo</strong>
+                            <small>Drag and drop or browse · JPG, PNG or WebP · up to 5 MB</small>
+                        </span>
+                    </label>
+
+                    <!-- Shown after a photo is selected -->
+                    <div class="image-preview" id="listing-image-preview" hidden>
+                        <img class="image-preview-img" id="listing-image-preview-img"
+                             alt="Selected item photo preview">
+
+                        <div class="image-preview-body">
+                            <strong>Photo added</strong>
+                            <small>This will show on your listing.</small>
+
+                            <div class="image-preview-actions">
+                                <label class="ghost-button image-change" for="listing-image">
+                                    Change
+                                </label>
+                                <button type="button" class="ghost-button"
+                                        id="listing-image-remove">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="field-error" id="listing-image-error" role="alert"></p>
+            </div>
+
+            <!-- Listing actions -->
+            <div class="modal-actions">
+                <button type="button" class="danger-button"
+                        id="listing-delete" hidden>
+                    Delete
+                </button>
+
+                <span class="modal-spacer"></span>
+
+                <button type="button" class="ghost-button" data-dialog-close>
+                    Cancel
+                </button>
+
+                <button type="submit" class="primary-button" id="listing-save">
+                    Save listing
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- NEW: Transfer funds dialog (opens from the Payouts tab) -->
+    <dialog class="modal transfer-modal" id="transfer-dialog" aria-labelledby="transfer-dialog-title">
+        <form class="modal-form" id="transfer-form" novalidate>
+            <div class="modal-head">
+                <div>
+                    <p class="eyebrow">FYND PAYOUTS</p>
+                    <h3 id="transfer-dialog-title">Transfer funds</h3>
+                    <p class="modal-sub">Choose where you'd like to send your balance.</p>
+                </div>
+
+                <button type="button" class="icon-button"
+                        data-dialog-close aria-label="Close">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 6l12 12M18 6 6 18"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Balance being transferred -->
+            <div class="transfer-balance">
+                <p class="balance-label">Available balance</p>
+                <p class="balance-value" id="transfer-balance">&#8369;0.00</p>
+            </div>
+
+            <!-- Bank / e-wallet choice (the options are built by seller-studio.js) -->
+            <fieldset class="bank-fieldset">
+                <legend class="transfer-legend">Choose a bank or e-wallet</legend>
+                <div class="bank-grid" id="bank-options"></div>
+                <p class="field-error" id="transfer-bank-error" role="alert"></p>
+            </fieldset>
+
+            <!-- Account details -->
+            <div class="form-row">
+                <div class="form-field">
+                    <label class="form-label" for="transfer-name">Account name</label>
+                    <input class="form-input" id="transfer-name" name="accountName"
+                           type="text" maxlength="60"
+                           placeholder="Name on account"
+                           autocomplete="off"
+                           aria-describedby="transfer-name-error">
+                    <p class="field-error" id="transfer-name-error" role="alert"></p>
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="transfer-number">Account number</label>
+                    <input class="form-input" id="transfer-number" name="accountNumber"
+                           type="text" inputmode="numeric" maxlength="16"
+                           placeholder="Enter account number"
+                           autocomplete="off"
+                           aria-describedby="transfer-number-error">
+                    <p class="field-error" id="transfer-number-error" role="alert"></p>
+                </div>
+            </div>
+
+            <!-- NEW: amount to transfer (only this amount is deducted from the balance) -->
+            <div class="form-field">
+                <label class="form-label" for="transfer-amount">Amount to transfer</label>
+
+                <div class="amount-input-wrap">
+                    <input class="form-input amount-input" id="transfer-amount" name="amount"
+                           type="text" inputmode="decimal" maxlength="12"
+                           placeholder="Enter an amount"
+                           autocomplete="off"
+                           aria-describedby="transfer-amount-available transfer-amount-error">
+                </div>
+
+                <div class="amount-hint">
+                    <span id="transfer-amount-available">Available: &#8369;0.00</span>
+                    <button type="button" class="amount-max" id="transfer-amount-max">
+                        Transfer all
+                    </button>
+                </div>
+
+                <p class="field-error" id="transfer-amount-error" role="alert"></p>
+            </div>
+
+            <p class="secure-note">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3"></path>
+                </svg>
+                <span>Your account details are only used for this transfer.</span>
+            </p>
+
+            <p class="field-error" id="transfer-form-error" role="alert"></p>
+
+            <div class="modal-actions">
+                <span class="modal-spacer"></span>
+
+                <button type="button" class="ghost-button" data-dialog-close>
+                    Cancel
+                </button>
+
+                <button type="submit" class="primary-button" id="transfer-submit">
+                    Continue
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="JS/seller-studio.js?v=3" defer></script>
+    <!-- NEW: must load AFTER seller-studio.js so the logged-in name always wins -->
+    <script src="JS/user-session.js" defer></script>
+</body>
+</html>

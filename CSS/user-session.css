@@ -1,0 +1,115 @@
+/* user-session.css
+ * Extra styles for the signed-in name display and the log-out confirmation.
+ * Load AFTER your page's own stylesheet.
+ */
+
+/* Long names/emails must not break the sidebar */
+.sidebar-account-details {
+    min-width: 0;
+}
+
+.sidebar-account-details strong,
+.sidebar-account-details small {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-account {
+    cursor: pointer;
+}
+
+/* ---------- Log out confirmation dialog ---------- */
+dialog.logout-dialog {
+    border: 0;
+    padding: 0;
+    width: min(420px, calc(100vw - 32px));
+    border-radius: 24px;
+    background: #ffffff;
+    color: #0b0b0b;
+    font-family: inherit;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+}
+
+dialog.logout-dialog::backdrop {
+    background: rgba(10, 10, 10, 0.45);
+}
+
+.logout-dialog-body {
+    padding: 28px;
+}
+
+.logout-dialog-eyebrow {
+    margin: 0 0 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: #5f6b00;
+}
+
+.logout-dialog-title {
+    margin: 0 0 12px;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.logout-dialog-text {
+    margin: 0 0 24px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: #4a4a4a;
+    overflow-wrap: anywhere;
+}
+
+.logout-dialog-text strong {
+    color: #0b0b0b;
+}
+
+.logout-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.logout-btn {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 20px;
+    border-radius: 999px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.logout-btn:hover {
+    transform: translateY(-1px);
+}
+
+.logout-btn:focus-visible {
+    outline: 2px solid #0b0b0b;
+    outline-offset: 2px;
+}
+
+.logout-btn-ghost {
+    background: #ffffff;
+    border-color: #d9d9d4;
+    color: #0b0b0b;
+}
+
+.logout-btn-ghost:hover {
+    background: #f3f3ef;
+}
+
+.logout-btn-primary {
+    background: #0b0b0b;
+    color: #ffffff;
+}
+
+.logout-btn-primary:hover {
+    background: #2a2a2a;
+}
