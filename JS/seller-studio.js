@@ -12,8 +12,16 @@
     const ALLOWED_CONDITIONS = ['Like new', 'Good', 'Fair'];
     const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
     const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-    const MAX_IMAGE_EDGE = 560;
-    const IMAGE_QUALITY = 0.78;
+
+    /* NEW: most photos per item (the first one is the cover). The same limit
+       is checked again in listings_api.php (FYND_MAX_PHOTOS). */
+    const MAX_IMAGES = 5;
+
+    /* CHANGED: 560 -> 900 so the photos still look sharp when a buyer opens
+       them full screen. If saving ever says a request is too large, set this
+       back to 560. */
+    const MAX_IMAGE_EDGE = 900;
+    const IMAGE_QUALITY = 0.8;
 
     /* SAMPLE ORDERS */
     const ORDERS = [
@@ -155,7 +163,18 @@
     let listings = [];
     let listingsLoaded = false;
 
+    /* CHANGED: every listing now has "images" (all photos, cover first) */
     function normalizeListing(raw) {
+        let images = Array.isArray(raw.images)
+            ? raw.images.map(String).filter(Boolean)
+            : [];
+
+        const cover = raw.image ? String(raw.image) : '';
+
+        if (images.length === 0 && cover) {
+            images = [cover];
+        }
+
         return {
             id: String(raw.id),
             title: String(raw.title || ''),
@@ -167,7 +186,8 @@
                 ? raw.condition
                 : 'Good',
             views: Number(raw.views) || 0,
-            image: raw.image ? String(raw.image) : '',
+            image: images[0] || cover,
+            images: images,
             status: 'live'
         };
     }
@@ -309,6 +329,11 @@
         const metaParts = [item.category];
 
         if (item.size) metaParts.push(item.size);
+
+        /* NEW: shows "3 photos" when an item has more than one */
+        if (item.images && item.images.length > 1) {
+            metaParts.push(item.images.length + ' photos');
+        }
 
         metaParts.push(viewsText(item));
 
@@ -1021,15 +1046,27 @@
             condition: $('#listing-condition')
         };
 
+        /* CHANGED: photo elements. The old single-photo preview elements
+           (listing-image-preview, listing-image-preview-img,
+           listing-image-remove) were replaced by the photo grid. */
         const imageInput = $('#listing-image');
         const imageDropzone = $('#listing-image-dropzone');
-        const imagePreview = $('#listing-image-preview');
-        const imagePreviewImg = $('#listing-image-preview-img');
-        const imageRemoveButton = $('#listing-image-remove');
         const imageError = $('#listing-image-error');
+        const photoGrid = $('#listing-photo-grid');
+        const dropzoneTitle = $('.image-dropzone-text strong', imageDropzone);
+        const dropzoneHint = $('.image-dropzone-text small', imageDropzone);
+
+        const DROPZONE_HINT =
+            'Drag and drop or browse · JPG, PNG or WebP · up to 5 MB each';
 
         let editingId = null;
-        let imageData = '';
+
+        /* CHANGED: a list of photos instead of one.
+           Each entry is either a saved path ("uploads/abc.jpg") or a new
+           photo that is not saved yet (a "data:" string).
+           The FIRST one is the cover. */
+        let images = [];
+
         let imageToken = 0;
         let dialogToken = 0;
         let saving = false;
@@ -1076,17 +1113,89 @@
             saveButton.disabled = processingImage || saving;
         }
 
-        function showImagePreview(src) {
-            imagePreviewImg.src = src;
-            imagePreview.hidden = false;
-            imageDropzone.hidden = true;
+        /* PHOTO GRID */
+        function renderPhotos() {
+            photoGrid.textContent = '';
+
+            images.forEach(function (src, index) {
+                const item = el(
+                    'div',
+                    'photo-item' + (index === 0 ? ' is-cover' : '')
+                );
+
+                const img = document.createElement('img');
+                img.alt = 'Photo ' + (index + 1) + ' of your item';
+                img.src = src;
+                item.appendChild(img);
+
+                if (index === 0) {
+                    item.appendChild(el('span', 'photo-cover-badge', 'Cover'));
+                }
+
+                const remove = el('button', 'photo-remove');
+                remove.type = 'button';
+                remove.setAttribute('data-photo-remove', String(index));
+                remove.setAttribute('aria-label', 'Remove photo ' + (index + 1));
+                remove.innerHTML =
+                    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+                    '<path d="M6 6l12 12M18 6 6 18"></path></svg>';
+                item.appendChild(remove);
+
+                if (index > 0) {
+                    const makeCover = el('button', 'photo-make-cover', 'Make cover');
+                    makeCover.type = 'button';
+                    makeCover.setAttribute('data-photo-cover', String(index));
+                    makeCover.setAttribute(
+                        'aria-label',
+                        'Make photo ' + (index + 1) + ' the cover'
+                    );
+                    item.appendChild(makeCover);
+                }
+
+                photoGrid.appendChild(item);
+            });
+
+            photoGrid.hidden = images.length === 0;
+
+            const full = images.length >= MAX_IMAGES;
+
+            imageDropzone.hidden = full;
+
+            dropzoneTitle.textContent =
+                images.length === 0 ? 'Add photos' : 'Add more photos';
+
+            dropzoneHint.textContent =
+                images.length === 0
+                    ? DROPZONE_HINT
+                    : DROPZONE_HINT + ' · ' + images.length + ' of ' + MAX_IMAGES + ' added';
         }
 
-        function clearImagePreview() {
-            imagePreviewImg.removeAttribute('src');
-            imagePreview.hidden = true;
-            imageDropzone.hidden = false;
-        }
+        photoGrid.addEventListener('click', function (event) {
+            const removeButton = event.target.closest('[data-photo-remove]');
+            const coverButton = event.target.closest('[data-photo-cover]');
+
+            if (removeButton) {
+                const index = Number(removeButton.getAttribute('data-photo-remove'));
+
+                if (index >= 0 && index < images.length) {
+                    images.splice(index, 1);
+                    setImageError('');
+                    renderPhotos();
+                }
+
+                return;
+            }
+
+            if (coverButton) {
+                const index = Number(coverButton.getAttribute('data-photo-cover'));
+
+                if (index > 0 && index < images.length) {
+                    const picked = images.splice(index, 1)[0];
+                    images.unshift(picked);
+                    renderPhotos();
+                }
+            }
+        });
 
         function resizeImage(file) {
             return new Promise(function (resolve, reject) {
@@ -1139,63 +1248,101 @@
             });
         }
 
-        function handleImageFile(file) {
+        /* CHANGED: handles one OR many files (browse or drag and drop) */
+        function handleImageFiles(fileList) {
             setImageError('');
 
-            if (!file) return;
+            const files = Array.prototype.slice.call(fileList || []);
 
-            if (ALLOWED_IMAGE_TYPES.indexOf(file.type) === -1) {
-                setImageError('Please choose a JPG, PNG or WebP image.');
-                imageInput.value = '';
+            /* the files are copied, so the input can be cleared right away */
+            imageInput.value = '';
+
+            if (files.length === 0) return;
+
+            const room = MAX_IMAGES - images.length;
+
+            if (room <= 0) {
+                setImageError('You can add up to ' + MAX_IMAGES + ' photos.');
                 return;
             }
 
-            if (file.size > MAX_IMAGE_BYTES) {
-                setImageError(
-                    'That image is too large. Please choose one under 5 MB.'
-                );
-                imageInput.value = '';
+            let notice = '';
+            const accepted = [];
+
+            files.forEach(function (file) {
+                if (ALLOWED_IMAGE_TYPES.indexOf(file.type) === -1) {
+                    notice = notice ||
+                        'Only JPG, PNG or WebP photos can be added.';
+                    return;
+                }
+
+                if (file.size > MAX_IMAGE_BYTES) {
+                    notice = notice ||
+                        'A photo was skipped because it is over 5 MB.';
+                    return;
+                }
+
+                accepted.push(file);
+            });
+
+            if (accepted.length > room) {
+                accepted.length = room;
+                notice = 'You can add up to ' + MAX_IMAGES +
+                    ' photos. The extra photos were skipped.';
+            }
+
+            if (accepted.length === 0) {
+                setImageError(notice);
                 return;
             }
 
             imageToken += 1;
             const token = imageToken;
+            let unreadable = 0;
 
             setProcessing(true);
 
-            resizeImage(file)
-                .then(function (dataUrl) {
-                    if (token !== imageToken) return;
+            /* the photos are processed one after another, in the order picked */
+            let chain = Promise.resolve();
 
-                    imageData = dataUrl;
-                    showImagePreview(dataUrl);
-                })
-                .catch(function () {
-                    if (token !== imageToken) return;
+            accepted.forEach(function (file) {
+                chain = chain.then(function () {
+                    if (token !== imageToken) return null;
 
-                    setImageError(
-                        'We could not read that image. Please try a different file.'
-                    );
-                })
-                .then(function () {
-                    if (token === imageToken) {
-                        setProcessing(false);
-                        imageInput.value = '';
-                    }
+                    return resizeImage(file)
+                        .then(function (dataUrl) {
+                            if (token !== imageToken) return;
+
+                            if (images.length < MAX_IMAGES) {
+                                images.push(dataUrl);
+                                renderPhotos();
+                            }
+                        })
+                        .catch(function () {
+                            unreadable += 1;
+                        });
                 });
+            });
+
+            chain.then(function () {
+                if (token !== imageToken) return;
+
+                setProcessing(false);
+
+                if (unreadable > 0) {
+                    setImageError(
+                        'We could not read ' +
+                        (unreadable === 1 ? 'one photo' : unreadable + ' photos') +
+                        '. Please try a different file.'
+                    );
+                } else if (notice) {
+                    setImageError(notice);
+                }
+            });
         }
 
         imageInput.addEventListener('change', function () {
-            handleImageFile(imageInput.files && imageInput.files[0]);
-        });
-
-        imageRemoveButton.addEventListener('click', function () {
-            imageToken += 1;
-            imageData = '';
-            imageInput.value = '';
-            setImageError('');
-            setProcessing(false);
-            clearImagePreview();
+            handleImageFiles(imageInput.files);
         });
 
         ['dragenter', 'dragover'].forEach(function (name) {
@@ -1215,11 +1362,7 @@
             event.preventDefault();
             imageDropzone.classList.remove('is-dragover');
 
-            const file = event.dataTransfer &&
-                event.dataTransfer.files &&
-                event.dataTransfer.files[0];
-
-            handleImageFile(file);
+            handleImageFiles(event.dataTransfer && event.dataTransfer.files);
         });
 
         /* FORM VALIDATION */
@@ -1337,13 +1480,17 @@
             imageToken += 1;
             setProcessing(false);
             imageInput.value = '';
-            imageData = item && item.image ? item.image : '';
 
-            if (imageData) {
-                showImagePreview(imageData);
+            /* CHANGED: start with every photo the item already has */
+            if (item && item.images && item.images.length) {
+                images = item.images.slice();
+            } else if (item && item.image) {
+                images = [item.image];
             } else {
-                clearImagePreview();
+                images = [];
             }
+
+            renderPhotos();
 
             titleEl.textContent = item ? 'Edit listing' : 'New listing';
 
@@ -1424,6 +1571,8 @@
                 return;
             }
 
+            /* CHANGED: sends every photo (cover first) as "images".
+               "image" (the cover) is still sent for older code. */
             const values = {
                 title: fields.title.value.trim(),
                 category: fields.category.value,
@@ -1431,7 +1580,8 @@
                 description: fields.description.value.trim(),
                 price: Math.round(Number(fields.price.value) * 100) / 100,
                 condition: fields.condition.value,
-                image: imageData
+                images: images.slice(),
+                image: images[0] || ''
             };
 
             const wasEditing = editingId;

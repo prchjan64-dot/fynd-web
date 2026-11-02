@@ -27,6 +27,11 @@
     var products = [];
     var activeCategory = 'all';
     var searchTerm = '';
+
+    var pythonSearchResults = null;
+    var pythonSearchTerm = '';
+    var pythonSearchRequest = 0;
+    
     var state = 'loading';
     var errorText = '';
     var inFlight = false;
@@ -90,7 +95,19 @@
         return node;
     }
 
+    /* Every product has "images" (all its photos, cover first).
+       "image" stays the cover, so cards, cart and favorites work as before. */
     function normalize(raw) {
+        var images = Array.isArray(raw.images)
+            ? raw.images.map(String).filter(Boolean)
+            : [];
+
+        var cover = raw.image ? String(raw.image) : '';
+
+        if (images.length === 0 && cover) {
+            images = [cover];
+        }
+
         return {
             id: String(raw.id),
             title: String(raw.title || ''),
@@ -99,7 +116,8 @@
             description: raw.description ? String(raw.description) : '',
             price: Number(raw.price) || 0,
             condition: String(raw.condition || 'Good'),
-            image: raw.image ? String(raw.image) : '',
+            image: images[0] || cover,
+            images: images,
             seller: raw.seller ? String(raw.seller) : ''
         };
     }
@@ -155,7 +173,8 @@
     }
 
     function isLoggedIn() {
-        return fetch('PHP/session.php', {
+        /* session.php lives in the FYND folder (next to Fynd2.html), not in PHP/ */
+        return fetch('session.php', {
             credentials: 'same-origin',
             cache: 'no-store',
             headers: {
@@ -366,9 +385,10 @@
             'font:600 14px/1.3 "Montserrat",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;' +
             'box-shadow:0 10px 30px rgba(0,0,0,.28);pointer-events:none;' +
             'animation:fynd-toast-in .25s ease;}' +
-            '.fynd-toast svg{display:block;width:18px;height:18px;flex-shrink:0;' +
-            'fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;}' +
-            '.fynd-toast.is-on svg{fill:#f5c451;stroke:#171717;}' +
+            '.fynd-toast svg{display:block;box-sizing:content-box;width:16px;height:16px;' +
+            'padding:6px;border-radius:50%;background:#3F6EA5;flex-shrink:0;' +
+            'fill:none;stroke:#FFF2B2;stroke-width:1.8;stroke-linejoin:round;}' +
+            '.fynd-toast.is-on svg{fill:#FFF2B2;stroke:#FFF2B2;}' +
             '.fynd-toast.is-leaving{opacity:0;transform:translate(-50%,-8px);' +
             'transition:opacity .25s ease,transform .25s ease;}' +
             '@keyframes fynd-toast-in{from{opacity:0;transform:translate(-50%,-8px);}' +
@@ -423,6 +443,475 @@
         showToast(isOn ? 'Added to favorites' : 'Removed from favorites', isOn);
     }
 
+    /* ---------- PHOTO GALLERY + FULL-SCREEN VIEWER ----------
+       An item can have several photos.
+       - In the product dialog you can swipe / drag the photo, use the
+         arrow buttons, the dots, or the left / right arrow keys.
+       - Clicking the photo opens it full screen on a dark layer. The
+         viewer uses the same photos, so you can swipe through them there too.
+       - The viewer closes when you click OUTSIDE the photo, press Esc,
+         or tap the X button. Clicking the photo itself keeps it open.
+       The viewer is a <dialog> opened with showModal(), because the product
+       dialog is also a modal dialog (a plain <div> would hide behind it).
+       The HTML and the CSS file do not need to change: the controls and
+       their styles are created here (same way as the "Added to favorites"
+       banner). */
+
+    var galleryImages = [];   /* photos of the open item (cover first) */
+    var galleryIndex = 0;     /* which photo is showing */
+    var galleryEls = null;    /* arrows, dots and counter in the dialog */
+    var swipeSuppress = false;/* true right after a swipe, so it is not a click */
+
+    var lightbox = null;
+    var lightboxImg = null;
+    var lightboxPrev = null;
+    var lightboxNext = null;
+    var lightboxCount = null;
+
+    var ARROW_LEFT_SVG =
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>';
+    var ARROW_RIGHT_SVG =
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>';
+
+    function ensureViewerStyle() {
+        if (document.getElementById('fynd-viewer-style')) {
+            return;
+        }
+
+        var style = document.createElement('style');
+        style.id = 'fynd-viewer-style';
+        style.textContent =
+            /* the photo in the product dialog is clickable and swipeable */
+            '.product-dialog-img{cursor:zoom-in;-webkit-user-drag:none;user-select:none;-webkit-user-select:none;}' +
+            '.product-dialog-image-wrap{overflow:hidden;border-radius:18px;touch-action:pan-y;' +
+            'user-select:none;-webkit-user-select:none;}' +
+
+            /* arrows, counter and dots (dialog + full screen) */
+            '.fynd-gal-btn{position:absolute;top:50%;z-index:2;display:flex;align-items:center;' +
+            'justify-content:center;width:38px;height:38px;margin-top:-19px;padding:0;border:0;' +
+            'border-radius:50%;background:rgba(255,255,255,.94);color:#0B1440;cursor:pointer;' +
+            'box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .2s ease,background-color .2s ease;}' +
+            '.fynd-gal-btn:hover{background:#ffffff;transform:scale(1.08);}' +
+            '.fynd-gal-btn:focus{outline:none;}' +
+            '.fynd-gal-btn:focus-visible{box-shadow:0 0 0 3px #86A9DE;}' +
+            '.fynd-gal-btn svg{display:block;width:20px;height:20px;fill:none;stroke:currentColor;' +
+            'stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}' +
+            '.fynd-gal-prev{left:10px;}' +
+            '.fynd-gal-next{right:10px;}' +
+
+            '.fynd-gal-counter{position:absolute;top:14px;left:14px;z-index:2;padding:6px 11px;' +
+            'border-radius:999px;background:rgba(11,20,64,.78);color:#ffffff;' +
+            'font:700 12px/1 "Montserrat",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;' +
+            'letter-spacing:.04em;pointer-events:none;}' +
+
+            '.fynd-gal-dots{position:absolute;left:50%;bottom:12px;z-index:2;display:flex;gap:7px;' +
+            'padding:7px 11px;border-radius:999px;background:rgba(11,20,64,.55);transform:translateX(-50%);}' +
+            '.fynd-gal-dot{width:8px;height:8px;padding:0;border:0;border-radius:50%;' +
+            'background:rgba(255,255,255,.5);cursor:pointer;transition:transform .2s ease,background-color .2s ease;}' +
+            '.fynd-gal-dot.is-active{background:#ffffff;transform:scale(1.25);}' +
+            '.fynd-gal-dot:focus{outline:none;}' +
+            '.fynd-gal-dot:focus-visible{box-shadow:0 0 0 3px #86A9DE;}' +
+
+            '.fynd-gal-btn[hidden],.fynd-gal-counter[hidden],.fynd-gal-dots[hidden]{display:none;}' +
+
+            /* slide-in when the photo changes */
+            '.fynd-slide-next{animation:fynd-slide-next .25s ease;}' +
+            '.fynd-slide-prev{animation:fynd-slide-prev .25s ease;}' +
+            '@keyframes fynd-slide-next{from{opacity:0;transform:translateX(28px);}to{opacity:1;transform:none;}}' +
+            '@keyframes fynd-slide-prev{from{opacity:0;transform:translateX(-28px);}to{opacity:1;transform:none;}}' +
+
+            /* the full-screen layer */
+            '.fynd-lightbox{width:100vw;height:100vh;height:100dvh;' +
+            'max-width:none;max-height:none;margin:0;padding:0;border:0;' +
+            'background:rgba(5,10,35,.94);overflow:hidden;cursor:zoom-out;touch-action:pan-y;}' +
+            '.fynd-lightbox[open]{display:flex;align-items:center;' +
+            'justify-content:center;animation:fynd-lightbox-in .2s ease;}' +
+            '.fynd-lightbox::backdrop{background:transparent;}' +
+
+            /* the big photo: shown whole (contain), never cropped */
+            '.fynd-lightbox-img{display:block;width:auto;height:auto;' +
+            'max-width:min(96vw,1400px);max-height:92vh;max-height:92dvh;' +
+            'object-fit:contain;border-radius:12px;-webkit-user-drag:none;user-select:none;' +
+            '-webkit-user-select:none;box-shadow:0 20px 60px rgba(0,0,0,.5);cursor:default;}' +
+            '.fynd-lightbox .fynd-gal-btn{width:48px;height:48px;margin-top:-24px;}' +
+            '.fynd-lightbox .fynd-gal-prev{left:18px;}' +
+            '.fynd-lightbox .fynd-gal-next{right:18px;}' +
+            '.fynd-lightbox .fynd-gal-counter{top:22px;left:20px;}' +
+
+            /* the X button */
+            '.fynd-lightbox-close{position:absolute;top:16px;right:16px;' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'width:44px;height:44px;padding:0;border:0;border-radius:50%;' +
+            'background:rgba(255,255,255,.94);color:#0B1440;cursor:pointer;' +
+            'box-shadow:0 2px 10px rgba(0,0,0,.3);transition:transform .2s ease;}' +
+            '.fynd-lightbox-close:hover{transform:scale(1.08);}' +
+            '.fynd-lightbox-close:focus{outline:none;}' +
+            '.fynd-lightbox-close:focus-visible{box-shadow:0 0 0 3px #86A9DE;}' +
+            '.fynd-lightbox-close svg{display:block;width:22px;height:22px;' +
+            'fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}' +
+
+            '@keyframes fynd-lightbox-in{from{opacity:0;}to{opacity:1;}}' +
+            '@media (prefers-reduced-motion:reduce){' +
+            '.fynd-lightbox[open]{animation:none;}' +
+            '.fynd-slide-next,.fynd-slide-prev{animation:none;}' +
+            '.fynd-lightbox-close,.fynd-gal-btn,.fynd-gal-dot{transition:none;}}';
+
+        document.head.appendChild(style);
+    }
+
+    function makeNavButton(direction) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'fynd-gal-btn fynd-gal-' + direction;
+        button.setAttribute(
+            'aria-label',
+            direction === 'prev' ? 'Previous photo' : 'Next photo'
+        );
+        button.innerHTML = direction === 'prev' ? ARROW_LEFT_SVG : ARROW_RIGHT_SVG;
+        return button;
+    }
+
+    function makeCounter() {
+        var counter = document.createElement('span');
+        counter.className = 'fynd-gal-counter';
+        counter.setAttribute('aria-live', 'polite');
+        return counter;
+    }
+
+    /* Plays the small slide-in on a photo. direction: 1 = next, -1 = previous */
+    function animatePhoto(img, direction) {
+        img.classList.remove('fynd-slide-next', 'fynd-slide-prev');
+
+        if (!direction) {
+            return;
+        }
+
+        void img.offsetWidth;
+        img.classList.add(direction > 0 ? 'fynd-slide-next' : 'fynd-slide-prev');
+    }
+
+    /* Builds the arrows, counter and dots inside the product dialog (once). */
+    function buildGalleryControls() {
+        if (galleryEls) {
+            return galleryEls;
+        }
+
+        if (!pdImage || !pdImage.parentNode) {
+            return null;
+        }
+
+        ensureViewerStyle();
+
+        var wrap = pdImage.parentNode;
+
+        var prev = makeNavButton('prev');
+        var next = makeNavButton('next');
+        var counter = makeCounter();
+        var dots = document.createElement('div');
+        dots.className = 'fynd-gal-dots';
+
+        prev.addEventListener('click', function () {
+            stepGallery(-1);
+        });
+
+        next.addEventListener('click', function () {
+            stepGallery(1);
+        });
+
+        wrap.appendChild(prev);
+        wrap.appendChild(next);
+        wrap.appendChild(counter);
+        wrap.appendChild(dots);
+
+        galleryEls = { prev: prev, next: next, counter: counter, dots: dots };
+
+        return galleryEls;
+    }
+
+    /* Shows or hides the arrows / dots / counter for the current item. */
+    function updateGalleryControls() {
+        if (!galleryEls) {
+            return;
+        }
+
+        var total = galleryImages.length;
+        var many = total > 1;
+
+        galleryEls.prev.hidden = !many;
+        galleryEls.next.hidden = !many;
+        galleryEls.counter.hidden = !many;
+        galleryEls.dots.hidden = !many;
+
+        galleryEls.dots.textContent = '';
+
+        if (!many) {
+            return;
+        }
+
+        galleryEls.counter.textContent = (galleryIndex + 1) + ' / ' + total;
+
+        for (var i = 0; i < total; i += 1) {
+            (function (index) {
+                var dot = document.createElement('button');
+                dot.type = 'button';
+                dot.className = 'fynd-gal-dot' + (index === galleryIndex ? ' is-active' : '');
+                dot.setAttribute('aria-label', 'Show photo ' + (index + 1));
+
+                if (index === galleryIndex) {
+                    dot.setAttribute('aria-current', 'true');
+                }
+
+                dot.addEventListener('click', function () {
+                    showGallery(index, index > galleryIndex ? 1 : -1);
+                });
+
+                galleryEls.dots.appendChild(dot);
+            })(i);
+        }
+    }
+
+    /* Shows photo number "index" (it wraps around at both ends). */
+    function showGallery(index, direction) {
+        var total = galleryImages.length;
+
+        if (!total || !pdImage) {
+            return;
+        }
+
+        galleryIndex = ((index % total) + total) % total;
+
+        pdImage.removeAttribute('data-fallback');
+        pdImage.src = galleryImages[galleryIndex];
+        animatePhoto(pdImage, direction);
+
+        updateGalleryControls();
+
+        if (lightbox && lightbox.open) {
+            updateLightbox(direction);
+        }
+    }
+
+    function stepGallery(delta) {
+        if (galleryImages.length < 2) {
+            return;
+        }
+
+        showGallery(galleryIndex + delta, delta);
+    }
+
+    /* Swipe / drag sideways on "area". "mover" is the photo that follows the
+       finger. Works with touch, pen and mouse. Vertical scrolling still works. */
+    function enableSwipe(area, mover) {
+        area.addEventListener('pointerdown', function (event) {
+            if (galleryImages.length < 2) {
+                return;
+            }
+
+            if (event.pointerType === 'mouse' && event.button !== 0) {
+                return;
+            }
+
+            if (event.target.closest && event.target.closest('button')) {
+                return;
+            }
+
+            var startX = event.clientX;
+            var startY = event.clientY;
+            var pointerId = event.pointerId;
+            var dx = 0;
+            var moved = false;
+
+            function finish(allowStep) {
+                document.removeEventListener('pointermove', onMove);
+                document.removeEventListener('pointerup', onUp);
+                document.removeEventListener('pointercancel', onUp);
+
+                mover.style.transition = '';
+                mover.style.transform = '';
+
+                if (!moved) {
+                    return;
+                }
+
+                /* the click that follows a swipe must not open / close anything */
+                swipeSuppress = true;
+
+                setTimeout(function () {
+                    swipeSuppress = false;
+                }, 80);
+
+                if (allowStep && Math.abs(dx) > 50) {
+                    stepGallery(dx < 0 ? 1 : -1);
+                }
+            }
+
+            function onMove(e) {
+                if (e.pointerId !== pointerId) {
+                    return;
+                }
+
+                dx = e.clientX - startX;
+                var dy = e.clientY - startY;
+
+                if (!moved) {
+                    if (Math.abs(dx) < 8) {
+                        return;
+                    }
+
+                    /* mostly vertical: let the page scroll instead */
+                    if (Math.abs(dy) > Math.abs(dx)) {
+                        finish(false);
+                        return;
+                    }
+
+                    moved = true;
+                }
+
+                mover.style.transition = 'none';
+                mover.style.transform = 'translateX(' + dx + 'px)';
+            }
+
+            function onUp(e) {
+                if (e.pointerId !== pointerId) {
+                    return;
+                }
+
+                finish(e.type === 'pointerup');
+            }
+
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            document.addEventListener('pointercancel', onUp);
+        });
+    }
+
+    /* ----- the full-screen viewer ----- */
+
+    function buildLightbox() {
+        if (lightbox) {
+            return lightbox;
+        }
+
+        ensureViewerStyle();
+
+        lightbox = document.createElement('dialog');
+        lightbox.className = 'fynd-lightbox';
+        lightbox.setAttribute('aria-label', 'Enlarged item photo');
+
+        lightboxImg = document.createElement('img');
+        lightboxImg.className = 'fynd-lightbox-img';
+        lightboxImg.alt = '';
+        lightboxImg.draggable = false;
+
+        /* CHANGED: the photo is not a "close" area, so no zoom-out cursor on it */
+        lightboxImg.style.cursor = 'default';
+
+        lightboxImg.addEventListener('error', function () {
+            if (!lightboxImg.getAttribute('data-fallback')) {
+                lightboxImg.setAttribute('data-fallback', '1');
+                lightboxImg.src = PLACEHOLDER;
+            }
+        });
+
+        lightboxPrev = makeNavButton('prev');
+        lightboxNext = makeNavButton('next');
+        lightboxCount = makeCounter();
+
+        lightboxPrev.addEventListener('click', function () {
+            stepGallery(-1);
+        });
+
+        lightboxNext.addEventListener('click', function () {
+            stepGallery(1);
+        });
+
+        var closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'fynd-lightbox-close';
+        closeButton.setAttribute('aria-label', 'Close photo');
+        closeButton.innerHTML =
+            '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+            '<path d="M6 6l12 12M18 6 6 18"></path></svg>';
+
+        lightbox.appendChild(lightboxImg);
+        lightbox.appendChild(lightboxPrev);
+        lightbox.appendChild(lightboxNext);
+        lightbox.appendChild(lightboxCount);
+        lightbox.appendChild(closeButton);
+        document.body.appendChild(lightbox);
+
+        /* A click on the dark area or the X closes the viewer.
+           The arrow buttons only change the photo, and clicking the
+           photo itself keeps the viewer open. (Esc also closes it.) */
+        lightbox.addEventListener('click', function (event) {
+            if (swipeSuppress) {
+                return;
+            }
+
+            if (event.target.closest && event.target.closest('.fynd-gal-btn')) {
+                return;
+            }
+
+            /* CHANGED: clicking the photo itself keeps the viewer open */
+            if (event.target === lightboxImg) {
+                return;
+            }
+
+            lightbox.close();
+        });
+
+        enableSwipe(lightbox, lightboxImg);
+
+        return lightbox;
+    }
+
+    function updateLightbox(direction) {
+        if (!lightbox || !lightboxImg) {
+            return;
+        }
+
+        var total = galleryImages.length;
+        var many = total > 1;
+
+        lightboxImg.removeAttribute('data-fallback');
+        lightboxImg.src = galleryImages[galleryIndex] || PLACEHOLDER;
+        lightboxImg.alt = pdImage ? pdImage.alt : '';
+        animatePhoto(lightboxImg, direction || 0);
+
+        lightboxPrev.hidden = !many;
+        lightboxNext.hidden = !many;
+        lightboxCount.hidden = !many;
+        lightboxCount.textContent = (galleryIndex + 1) + ' / ' + total;
+    }
+
+    /* Opens the photo that is showing in the product dialog, full screen. */
+    function openLightbox() {
+        var src = galleryImages[galleryIndex];
+
+        if (!src) {
+            return;
+        }
+
+        var box = buildLightbox();
+
+        if (typeof box.showModal !== 'function') {
+            window.open(src, '_blank');
+            return;
+        }
+
+        updateLightbox(0);
+
+        if (!box.open) {
+            box.showModal();
+        }
+    }
+
+    function closeLightbox() {
+        if (lightbox && lightbox.open) {
+            lightbox.close();
+        }
+    }
+
     /* ---------- CART ---------- */
 
     function readLocalCart() {
@@ -466,37 +955,41 @@
     }
 
     /* Add-to-cart action is used ONLY by the Add to Cart button.
-       Resolves to 'added', 'exists' or 'failed' (reason in lastError). */
+       Resolves to 'added', 'exists' or 'failed' (reason in lastError).
+
+       The server is asked first. cart.php uses the same login check as
+       Seller Studio, so it knows better than a separate session.php request
+       whether the visitor is logged in. Only a 401 ("not logged in") falls
+       back to the browser cart; any other error is shown instead of being
+       hidden. */
     function addToCart(p) {
         lastError = '';
 
-        return sessionReady.then(function () {
-            if (!auth.loggedIn) {
-                var localResult = addToLocalCart(p);
-
-                if (localResult === 'failed') {
-                    lastError = 'Could not save to your cart. Please try again.';
-                }
-
-                return localResult;
+        return api(CART_API, {
+            method: 'POST',
+            body: {
+                action: 'add',
+                product_id: Number(p.id)
             }
-
-            return api(CART_API, {
-                method: 'POST',
-                body: {
-                    action: 'add',
-                    product_id: Number(p.id)
-                }
+        })
+            .then(function (data) {
+                return data.status === 'exists' ? 'exists' : 'added';
             })
-                .then(function (data) {
-                    return data.status === 'exists' ? 'exists' : 'added';
-                })
-                .catch(function (err) {
-                    console.error(TAG, err.message || err);
-                    lastError = err.message || 'Could not save to your cart. Please try again.';
-                    return 'failed';
-                });
-        });
+            .catch(function (err) {
+                if (err && err.status === 401) {
+                    var localResult = addToLocalCart(p);
+
+                    if (localResult === 'failed') {
+                        lastError = 'Could not save to your cart. Please try again.';
+                    }
+
+                    return localResult;
+                }
+
+                console.error(TAG, err.message || err);
+                lastError = (err && err.message) || 'Could not save to your cart. Please try again.';
+                return 'failed';
+            });
     }
 
     /* ---------- MOVE BROWSER DATA INTO THE ACCOUNT ----------
@@ -607,7 +1100,7 @@
         link.appendChild(box);
         media.appendChild(link);
 
-        /* Same icon and same CSS class as the star in the product dialog. */
+        /* Same CSS class as the favorite button in the product dialog. */
         var fav = el('button', 'product-dialog-favorite product-favorite');
         fav.type = 'button';
         fav.setAttribute('data-id', p.id);
@@ -644,8 +1137,14 @@
         var info = el('div', 'product-price-info');
 
         info.appendChild(el('p', 'price', formatPrice(p.price)));
+
+        /* Shows "Seller · size", like "Mia Studio · EU 39" */
         info.appendChild(
-            el('p', 'store-name', 'From ' + (p.seller || 'a FYND seller'))
+            el(
+                'p',
+                'store-name',
+                (p.seller || 'a FYND seller') + (p.size ? ' · ' + p.size : '')
+            )
         );
 
         bottom.appendChild(info);
@@ -669,7 +1168,7 @@
         return p;
     }
 
-    /* CHANGED: small note shown above typo results. */
+    /* Small note shown above typo results. */
     function fuzzyNotice(text) {
         var p = el('p', 'products-message products-fuzzy-note', text);
         p.style.cssText =
@@ -687,7 +1186,7 @@
        - While the search box has text, the category filter is IGNORED,
          so results come from ALL categories.
 
-       CHANGED: if nothing matches exactly, a typo-tolerant search runs
+       If nothing matches exactly, a typo-tolerant search runs
        and shows the closest products / shops instead. */
 
     function cleanText(value) {
@@ -909,27 +1408,44 @@
         if (words.length === 0) {
             return {
                 items: products.filter(function (p) {
-                    return activeCategory === 'all' || p.category === activeCategory;
+                    return activeCategory === 'all' ||
+                        p.category === activeCategory;
                 }),
                 fuzzy: false
             };
         }
 
-        /* Search text: look through ALL categories, exact matches first. */
+        /* Search text: look through all categories, exact matches first. */
         var exact = products.filter(function (p) {
             return matchesExact(p, words);
         });
 
         if (exact.length > 0) {
-            return { items: exact, fuzzy: false };
+            return {
+                items: exact,
+                fuzzy: false
+            };
         }
 
-        /* Nothing matched exactly: try the closest matches (typos). */
-        return { items: closestMatches(words), fuzzy: true };
+        /* Use Python results if they match the current search. */
+        if (
+            pythonSearchTerm === searchTerm &&
+            Array.isArray(pythonSearchResults)
+        ) {
+            return {
+                items: pythonSearchResults,
+                fuzzy: true
+            };
+        }
+
+        /* Otherwise, try the closest matches. */
+        return {
+            items: closestMatches(words),
+            fuzzy: true
+        };
     }
 
-    /* Highlights the "All items" button while searching, and puts the
-       real selected category back when the search box is empty. */
+    /* Highlights the "All items" button while searching. */
     function updateFilterButtons() {
         var showing = searchTerm ? 'all' : activeCategory;
 
@@ -1124,9 +1640,19 @@
 
         currentProduct = p;
 
-        pdImage.removeAttribute('data-fallback');
+        /* load all photos of the item and show the first one */
         pdImage.alt = p.title;
-        pdImage.src = p.image || PLACEHOLDER;
+
+        galleryImages = (p.images && p.images.length)
+            ? p.images.slice()
+            : (p.image ? [p.image] : []);
+
+        if (!galleryImages.length) {
+            galleryImages = [PLACEHOLDER];
+        }
+
+        buildGalleryControls();
+        showGallery(0, 0);
 
         pdCondition.textContent = p.condition;
         pdCondition.className =
@@ -1198,7 +1724,7 @@
     });
 
     if (productDialog && pdImage) {
-        /* The + button opens the product details dialog. */
+        /* The Add to bag button opens the product details dialog. */
         grid.addEventListener('click', function (event) {
             var button = event.target.closest('.product-add');
 
@@ -1242,6 +1768,61 @@
                 pdImage.src = PLACEHOLDER;
             }
         });
+
+        /* CLICK THE PHOTO TO VIEW IT FULL SCREEN.
+           (The favorite star is a separate button, so clicking the star
+           does not open the viewer.) */
+        ensureViewerStyle();
+
+        pdImage.draggable = false;
+        pdImage.setAttribute('title', 'Click to enlarge');
+        pdImage.setAttribute('tabindex', '0');
+        pdImage.setAttribute('role', 'button');
+
+        pdImage.addEventListener('click', function () {
+            if (swipeSuppress) {
+                return;
+            }
+
+            openLightbox();
+        });
+
+        /* Keyboard: Enter or Space on the photo does the same. */
+        pdImage.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openLightbox();
+            }
+        });
+
+        /* swipe / drag the photo sideways to see the next one */
+        if (pdImage.parentNode) {
+            enableSwipe(pdImage.parentNode, pdImage);
+        }
+
+        /* left / right arrow keys change the photo
+           (in the product dialog and in the full-screen viewer) */
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+                return;
+            }
+
+            var viewerOpen = lightbox && lightbox.open;
+
+            if (!viewerOpen && !productDialog.open) {
+                return;
+            }
+
+            if (galleryImages.length < 2) {
+                return;
+            }
+
+            event.preventDefault();
+            stepGallery(event.key === 'ArrowRight' ? 1 : -1);
+        });
+
+        /* If the product dialog closes, the photo viewer closes too. */
+        productDialog.addEventListener('close', closeLightbox);
 
         if (pdClose) {
             pdClose.addEventListener('click', function () {
@@ -1580,11 +2161,72 @@
 
         updateFilterButtons();
         render();
+        
 
         if (shouldScroll && searchTerm) {
             scrollToProducts();
         }
     }
+    
+    function searchWithPython() {
+        var query = searchInput ? searchInput.value.trim() : '';
+        var requestId = ++pythonSearchRequest;
+
+        if (!query || products.length === 0) {
+            pythonSearchResults = null;
+            pythonSearchTerm = '';
+            return;
+        }
+
+        var words = cleanText(query).split(' ').filter(Boolean);
+
+        var exact = products.filter(function (p) {
+            return matchesExact(p, words);
+        });
+
+        if (exact.length > 0) {
+            pythonSearchResults = null;
+            pythonSearchTerm = '';
+            return;
+        }
+
+        fetch('http://127.0.0.1:5000/smart-search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                query: query,
+                products: products
+            })
+        })
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('Python search HTTP ' + response.status);
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            if (requestId !== pythonSearchRequest) return;
+            if (!searchInput || searchInput.value.trim() !== query) return;
+
+            if (!data.ok || !Array.isArray(data.products)) {
+                throw new Error('Invalid Python search response.');
+            }
+
+            pythonSearchResults = data.products;
+            pythonSearchTerm = searchTerm;
+            render();
+        })
+        .catch(function (error) {
+            console.warn(
+                '[storefront] Python Smart Search unavailable:',
+                error.message
+            );
+        });
+    }
+
+
 
     if (searchInput) {
         searchInput.addEventListener('input', function () {

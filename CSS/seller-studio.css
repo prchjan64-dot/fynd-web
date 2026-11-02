@@ -1181,6 +1181,26 @@ svg {
     stroke-linejoin: round;
 }
 
+/* CHANGED: FYND logo image (replaces the "Navigation" icon) */
+.sidebar .sidebar-logo {
+    display: block;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    max-width: 28px;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+/* CHANGED: "FYND" wordmark (replaces the "Navigation" text) */
+.sidebar .sidebar-brand {
+    color: #1a6fd4;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
 /* Navigation list */
 .sidebar-nav {
     display: flex;
@@ -1358,6 +1378,11 @@ svg {
         margin-bottom: 10px;
         padding-left: 0;
         font-size: 13px;
+    }
+
+    /* CHANGED: smaller FYND wordmark on phones */
+    .sidebar .sidebar-brand {
+        font-size: 20px;
     }
 
     .sidebar-nav {

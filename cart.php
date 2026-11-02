@@ -4,9 +4,10 @@
  * GET  -> the logged-in user's cart
  * POST -> JSON body (Content-Type: application/json):
  *           {"action":"add","product_id":12}
- *           {"action":"set_qty","product_id":12,"quantity":3}
  *           {"action":"remove","product_id":12}
- *           {"action":"merge","items":[{"product_id":1,"quantity":2}]}
+ *           {"action":"merge","items":[{"product_id":1},{"product_id":2}]}
+ *
+ * There is no quantity: every product is in a user's cart at most once.
  */
 ob_start();
 error_reporting(E_ALL);
@@ -30,23 +31,95 @@ function cart_id($value)
     return $id > 0 ? $id : 0;
 }
 
-/** Quantity between 1 and 99 (same limits as the cart page). */
-function cart_quantity($value)
+/**
+ * FIXED: the products column names are discovered (like listings_api.php does)
+ * instead of being assumed. A missing `seller_name` column used to make the
+ * whole cart query fail.
+ *
+ * @return array ['pk' => string, 'seller' => string|null]
+ */
+function cart_product_cols(mysqli $conn)
 {
-    if (is_int($value) || (is_string($value) && ctype_digit($value))) {
-        $qty = (int)$value;
-    } elseif (is_float($value)) {
-        $qty = (int)round($value);
-    } else {
-        $qty = 1;
+    static $info = null;
+
+    if ($info !== null) {
+        return $info;
     }
 
-    return max(1, min(99, $qty));
+    $names = [];
+    $res = $conn->query('SHOW COLUMNS FROM `products`');
+
+    if ($res === false) {
+        throw new RuntimeException('Database error: ' . $conn->error);
+    }
+
+    while ($r = $res->fetch_assoc()) {
+        $names[] = $r['Field'];
+    }
+
+    $res->free();
+
+    $pk = fynd_pick_column($names, ['product_id', 'id']);
+
+    if ($pk === null) {
+        throw new RuntimeException('The products table has no product_id column.');
+    }
+
+    $info = [
+        'pk'     => $pk,
+        'seller' => fynd_pick_column($names, ['seller_name']),
+    ];
+
+    return $info;
+}
+
+/**
+ * cart_items.cart_id MUST be AUTO_INCREMENT.
+ *
+ * When it is not, every insert (which does not send a cart_id) is stored with
+ * cart_id = 0, so from the second insert on the PRIMARY KEY collides. The old
+ * "ON DUPLICATE KEY UPDATE cart_id = cart_id" swallowed that collision, which
+ * is why the page said "Added" while nothing was saved. Now it is reported.
+ */
+function cart_require_auto_increment(mysqli $conn)
+{
+    static $checked = false;
+
+    if ($checked) {
+        return;
+    }
+
+    $res = $conn->query("SHOW COLUMNS FROM `cart_items` LIKE 'cart_id'");
+
+    if ($res === false) {
+        throw new RuntimeException('Database error: ' . $conn->error);
+    }
+
+    $row = $res->fetch_assoc();
+    $res->free();
+
+    if (!$row) {
+        throw new RuntimeException('The cart_items table has no cart_id column.');
+    }
+
+    if (stripos((string)$row['Extra'], 'auto_increment') === false) {
+        throw new RuntimeException(
+            'cart_items.cart_id is not AUTO_INCREMENT. Run this in phpMyAdmin (SQL tab): ' .
+            'ALTER TABLE cart_items MODIFY cart_id INT(11) NOT NULL AUTO_INCREMENT;'
+        );
+    }
+
+    $checked = true;
 }
 
 function cart_product_exists(mysqli $conn, $productId)
 {
-    $stmt = fynd_prepare($conn, 'SELECT 1 FROM products WHERE product_id = ? LIMIT 1');
+    $pk = cart_product_cols($conn)['pk'];
+
+    $stmt = fynd_prepare(
+        $conn,
+        'SELECT 1 FROM `products` WHERE ' . fynd_q($pk) . ' = ? LIMIT 1'
+    );
     $stmt->bind_param('i', $productId);
     fynd_execute($stmt);
     $stmt->store_result();
@@ -70,12 +143,18 @@ function cart_line_exists(mysqli $conn, $uid, $productId)
 
 function cart_list(mysqli $conn, $uid)
 {
-    $sql = 'SELECT c.product_id, c.quantity, p.seller_name, p.title,
-                   p.category, p.`size`, p.price, p.image
-              FROM cart_items c
-        INNER JOIN products p ON p.product_id = c.product_id
-             WHERE c.user_id = ?
-          ORDER BY c.cart_id ASC';
+    $cols = cart_product_cols($conn);
+
+    $sellerSql = $cols['seller'] !== null
+        ? 'p.' . fynd_q($cols['seller'])
+        : "''";
+
+    $sql = 'SELECT c.product_id, ' . $sellerSql . ' AS seller_name, p.title, '
+         . 'p.category, p.`size`, p.price, p.image '
+         . 'FROM cart_items c '
+         . 'INNER JOIN products p ON p.' . fynd_q($cols['pk']) . ' = c.product_id '
+         . 'WHERE c.user_id = ? '
+         . 'ORDER BY c.cart_id ASC';
 
     $stmt = fynd_prepare($conn, $sql);
     $stmt->bind_param('i', $uid);
@@ -93,7 +172,6 @@ function cart_list(mysqli $conn, $uid)
             'shop'  => isset($row['seller_name']) ? (string)$row['seller_name'] : '',
             'size'  => $size !== '' ? $size : (string)$row['category'],
             'price' => (float)$row['price'],
-            'qty'   => (int)$row['quantity'],
             'image' => isset($row['image']) ? (string)$row['image'] : '',
         ];
     }
@@ -150,36 +228,52 @@ try {
             fynd_json(['ok' => true, 'status' => 'exists']);
         }
 
+        cart_require_auto_increment($conn);
+
+        /* FIXED: a plain INSERT. "ON DUPLICATE KEY UPDATE cart_id = cart_id"
+           silently ignored any key collision, so failed saves looked fine. */
         $stmt = fynd_prepare(
             $conn,
-            'INSERT INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, 1)
-             ON DUPLICATE KEY UPDATE cart_id = cart_id'
+            'INSERT INTO cart_items (user_id, product_id) VALUES (?, ?)'
         );
         $stmt->bind_param('ii', $uid, $productId);
-        fynd_execute($stmt);
-        $stmt->close();
 
-        fynd_json(['ok' => true, 'status' => 'added']);
-    }
+        try {
+            fynd_execute($stmt);
+        } catch (Throwable $e) {
+            $stmt->close();
 
-    if ($action === 'set_qty') {
-        $productId = cart_id(isset($data['product_id']) ? $data['product_id'] : null);
+            // Two quick clicks can both pass the check above; the unique key
+            // (user_id, product_id) stops the second one.
+            if (cart_line_exists($conn, $uid, $productId)) {
+                fynd_json(['ok' => true, 'status' => 'exists']);
+            }
 
-        if ($productId === 0) {
-            throw new FyndUserError('Invalid item.');
+            throw $e;
         }
 
-        $qty = cart_quantity(isset($data['quantity']) ? $data['quantity'] : 1);
-
-        $stmt = fynd_prepare(
-            $conn,
-            'UPDATE cart_items SET quantity = ? WHERE user_id = ? AND product_id = ?'
-        );
-        $stmt->bind_param('iii', $qty, $uid, $productId);
-        fynd_execute($stmt);
         $stmt->close();
 
-        fynd_json(['ok' => true, 'quantity' => $qty]);
+        /* FIXED: only answer "added" when the item can really be read back
+           from the cart. Otherwise the page would show "Added to your cart"
+           for something that was never saved. */
+        $items = cart_list($conn, $uid);
+        $saved = false;
+
+        foreach ($items as $item) {
+            if ((int)$item['id'] === $productId) {
+                $saved = true;
+                break;
+            }
+        }
+
+        if (!$saved) {
+            throw new RuntimeException(
+                'The item was not found in your cart after saving it.'
+            );
+        }
+
+        fynd_json(['ok' => true, 'status' => 'added', 'count' => count($items)]);
     }
 
     if ($action === 'remove') {
@@ -206,16 +300,15 @@ try {
 
         $lines = array_slice($lines, 0, 100);
 
-        $existsStmt = fynd_prepare($conn, 'SELECT 1 FROM products WHERE product_id = ? LIMIT 1');
+        cart_require_auto_increment($conn);
+
         $insertStmt = fynd_prepare(
             $conn,
-            'INSERT IGNORE INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, ?)'
+            'INSERT IGNORE INTO cart_items (user_id, product_id) VALUES (?, ?)'
         );
 
         $pid = 0;
-        $qty = 1;
-        $existsStmt->bind_param('i', $pid);
-        $insertStmt->bind_param('iii', $uid, $pid, $qty);
+        $insertStmt->bind_param('ii', $uid, $pid);
 
         foreach ($lines as $line) {
             if (!is_array($line)) {
@@ -228,21 +321,18 @@ try {
                 continue;
             }
 
-            $qty = cart_quantity(isset($line['quantity']) ? $line['quantity'] : 1);
+            if (!cart_product_exists($conn, $pid)) {
+                continue;
+            }
 
-            fynd_execute($existsStmt);
-            $existsStmt->store_result();
-            $found = $existsStmt->num_rows > 0;
-            $existsStmt->free_result();
-
-            if (!$found) {
+            // Already in the account cart: keep that line as it is.
+            if (cart_line_exists($conn, $uid, $pid)) {
                 continue;
             }
 
             fynd_execute($insertStmt);
         }
 
-        $existsStmt->close();
         $insertStmt->close();
 
         fynd_json(['ok' => true]);

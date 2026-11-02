@@ -6,17 +6,140 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FYND Marketplace</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200..800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    <!-- CHANGED: CSS version raised to v=12 so the browser loads the new footer logo -->
-    <link rel="stylesheet" href="CSS/style.css?v=12">
+   <link rel="stylesheet" href="CSS/style.css?v=22">
     <link rel="icon" type="image/jpeg" href="image/logo2.0.jpg">
-    <script src="JS/Fynd2.js?v=11" defer></script>
+    <script src="JS/Fynd2.js?v=16" defer></script>
+
+    <!-- NEW: LOADING SCREEN (step 1 of 3).
+         Runs immediately. If the visitor already saw the loader during this
+         visit, it is skipped; otherwise page scrolling is locked until the
+         loader hides. -->
+    <script>
+        (function () {
+            var root = document.documentElement;
+            var seen = false;
+
+            try {
+                seen = sessionStorage.getItem('fynd_loader_seen') === '1';
+            } catch (e) {
+                seen = false;
+            }
+
+            root.classList.add(seen ? 'no-loader' : 'is-loading');
+        })();
+    </script>
+
+    <!-- NEW: LOADING SCREEN styles (step 2 of 3) -->
+    <style>
+        #fynd-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 2147483000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 26px;
+            background: #162660;
+            color: #F1E4D1;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #fynd-loader.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        html.no-loader #fynd-loader {
+            display: none;
+        }
+
+        html.is-loading,
+        html.is-loading body {
+            overflow: hidden;
+        }
+
+        .fynd-loader-logo {
+            display: block;
+            width: 84px;
+            height: 84px;
+            border-radius: 20px;
+            object-fit: contain;
+            background: #ffffff;
+            box-shadow: 0 12px 40px rgba(134, 169, 222, 0.35);
+            animation: fynd-loader-pulse 1.4s ease-in-out infinite;
+        }
+
+        .fynd-loader-name {
+            margin: 0;
+            font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .fynd-loader-bar {
+            position: relative;
+            width: min(220px, 60vw);
+            height: 4px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(241, 228, 209, 0.2);
+        }
+
+        .fynd-loader-bar::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 40%;
+            border-radius: 999px;
+            background: #F1E4D1;
+            animation: fynd-loader-slide 1.2s ease-in-out infinite;
+        }
+
+        @keyframes fynd-loader-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        @keyframes fynd-loader-slide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(250%); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .fynd-loader-logo,
+            .fynd-loader-bar::after {
+                animation: none;
+            }
+
+            .fynd-loader-bar::after {
+                width: 100%;
+            }
+
+            #fynd-loader {
+                transition: none;
+            }
+        }
+    </style>
 </head>
 
 <body>
+
+    <!-- NEW: LOADING SCREEN markup (shown until the page has loaded) -->
+    <div id="fynd-loader" role="status" aria-live="polite" aria-label="Loading FYND Marketplace">
+        <img class="fynd-loader-logo" src="image/logo2.0.jpg" alt="">
+        <p class="fynd-loader-name">FYND</p>
+        <div class="fynd-loader-bar" aria-hidden="true"></div>
+    </div>
 
     <header>
         <img src="image/logo2.0.jpg" alt="FYND logo" class="logo">
@@ -184,7 +307,6 @@
         <footer>
             <div class="footer-container">
                 <div class="brand">
-                    <!-- CHANGED: the blue box is now the FYND logo image -->
                     <img src="image/logo2.0.jpg" alt="FYND logo" class="logo footer-logo">
                     <div>
                         <h3>FYND Marketplace</h3>
@@ -425,7 +547,61 @@
     </div>
 </dialog>
 
+    <!-- NEW: LOADING SCREEN script (step 3 of 3).
+         Hides the loader once the page (including the hero images) has
+         loaded. It stays at least 0.8 s so it never just flashes, and a
+         6 s safety timer hides it even if an image is slow or broken. -->
+    <script>
+        (function () {
+            var loader = document.getElementById('fynd-loader');
+            var root = document.documentElement;
 
+            if (!loader || root.classList.contains('no-loader')) {
+                return;
+            }
+
+            var MIN_MS = 800;
+            var MAX_MS = 6000;
+            var started = Date.now();
+            var finished = false;
+
+            function finish() {
+                if (finished) {
+                    return;
+                }
+
+                finished = true;
+
+                try {
+                    sessionStorage.setItem('fynd_loader_seen', '1');
+                } catch (e) {
+                    /* ignore: the loader may show again next visit */
+                }
+
+                loader.classList.add('is-hidden');
+                root.classList.remove('is-loading');
+
+                setTimeout(function () {
+                    if (loader.parentNode) {
+                        loader.parentNode.removeChild(loader);
+                    }
+                }, 600);
+            }
+
+            function whenReady() {
+                var wait = Math.max(0, MIN_MS - (Date.now() - started));
+                setTimeout(finish, wait);
+            }
+
+            if (document.readyState === 'complete') {
+                whenReady();
+            } else {
+                window.addEventListener('load', whenReady);
+            }
+
+            setTimeout(finish, MAX_MS);
+        })();
+    </script>
 
 </body>
 

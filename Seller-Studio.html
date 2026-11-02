@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FYND Marketplace</title>
-    <link rel="stylesheet" href="CSS/seller-studio.css?v=3">
-    <!-- NEW: styles for the name display + log-out confirmation (must come after seller-studio.css) -->
+    <link rel="stylesheet" href="CSS/seller-studio.css?v=4">
+    <!-- styles for the name display + log-out confirmation (must come after seller-studio.css) -->
     <link rel="stylesheet" href="CSS/user-session.css">
-     <link rel="icon" type="image/jpeg" href="image/logo2.0.jpg">
+    <link rel="icon" type="image/jpeg" href="image/logo2.0.jpg">
 
-    <!-- NEW: styling for the Description textarea in the listing form.
-         Kept here so seller-studio.css does not need to change. -->
+    <!-- Description textarea + LISTING PHOTO styles.
+         CHANGED: the photo styles now live here (not in seller-photos.css),
+         so they always load. -->
     <style>
         .form-textarea {
             display: block;
@@ -23,10 +24,160 @@
             font-family: inherit;
             resize: vertical;
         }
+
+        /* ===== LISTING PHOTOS ===== */
+
+        .image-upload {
+            min-width: 0;
+        }
+
+        /* small square thumbnails: 3 per row (2 on phones) */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            width: 100%;
+            margin: 0 0 12px;
+        }
+
+        .photo-grid[hidden] {
+            display: none;
+        }
+
+        .photo-item {
+            position: relative;
+            min-width: 0;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            border-radius: 14px;
+            background: #e4e4df;
+            box-shadow: 0 0 0 1px #e7e7e2;
+        }
+
+        .photo-item img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        /* COVER photo: thick blue frame, glow and badge */
+        .photo-item.is-cover {
+            box-shadow: 0 0 0 3px #1a86f0, 0 6px 18px rgba(26, 134, 240, 0.35);
+        }
+
+        .photo-item.is-cover::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border: 3px solid #1a86f0;
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
+        .photo-cover-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: #1a86f0;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .photo-cover-badge::before {
+            content: "\2605";
+            font-size: 11px;
+            line-height: 1;
+        }
+
+        /* remove (X) button, top right */
+        .photo-remove {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.96);
+            color: #0f0f10;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+
+        .photo-remove svg {
+            width: 13px;
+            height: 13px;
+            stroke-width: 2.2;
+        }
+
+        .photo-remove:hover {
+            background: #d12f34;
+            color: #ffffff;
+        }
+
+        /* "Make cover" bar at the bottom of every non-cover photo */
+        .photo-make-cover {
+            position: absolute;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            z-index: 2;
+            padding: 7px 4px;
+            border: 0;
+            border-radius: 10px;
+            background: rgba(17, 17, 17, 0.82);
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.1;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .photo-make-cover::before {
+            content: "\2606";
+            margin-right: 4px;
+        }
+
+        .photo-make-cover:hover {
+            background: #1a86f0;
+        }
+
+        .photo-remove:focus-visible,
+        .photo-make-cover:focus-visible {
+            outline: 3px solid #1a86f0;
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 480px) {
+            .photo-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
     </style>
 
 </head>
-<!-- NEW: data-require-login sends visitors who are not logged in back to signin.html -->
+<!-- data-require-login sends visitors who are not logged in back to signin.html -->
 <body data-require-login>
     <div class="dashboard">
 
@@ -37,11 +188,8 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-top">
                 <div class="sidebar-label">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="3" y="3" width="18" height="18" rx="4"></rect>
-                        <path d="M9 3v18"></path>
-                    </svg>
-                    <span>Navigation</span>
+                    <img src="image/logo2.0.jpg" alt="FYND logo" class="sidebar-logo" width="28" height="28">
+                    <span class="sidebar-brand">FYND</span>
                     <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Close navigation">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M6 6l12 12M18 6 6 18"></path>
@@ -76,9 +224,7 @@
                 </nav>
             </div>
 
-            <!-- CHANGED: shows the logged-in user and opens the "Log out?" confirmation.
-                 Kept as an <a> so your existing sidebar-account styling is untouched;
-                 the href is only a fallback if JavaScript fails. -->
+            <!-- Shows the logged-in user and opens the "Log out?" confirmation. -->
             <a href="signin.html" class="sidebar-account" id="sidebar-account"
                role="button" aria-haspopup="dialog"
                aria-label="Account menu - log out"
@@ -115,7 +261,6 @@
                         <span>SELLER STUDIO</span>
                     </div>
 
-                    <!-- CHANGED: name now comes from the logged-in session -->
                     <h1 class="greeting" id="greeting">
                         <span id="greeting-text" data-user-greeting>Good morning</span>,
                         <span id="greeting-name" data-user-first>Guest</span><span class="greeting-dot">.</span>
@@ -207,7 +352,7 @@
                 </p>
             </section>
 
-            <!-- Payouts (CHANGED: available balance card + recent payout activity table) -->
+            <!-- Payouts (available balance card + recent payout activity table) -->
             <section class="panel-card" id="panel-payouts"
                      role="tabpanel" aria-labelledby="tab-payouts" hidden>
 
@@ -354,7 +499,7 @@
                 </div>
             </div>
 
-            <!-- NEW: Item description (required) -->
+            <!-- Item description (required) -->
             <div class="form-field">
                 <label class="form-label" for="listing-description">Description</label>
                 <textarea class="form-input form-textarea" id="listing-description"
@@ -365,19 +510,22 @@
                 <p class="field-error" id="listing-description-error" role="alert"></p>
             </div>
 
-            <!-- Item photo -->
+            <!-- Item photos (up to 5). The first photo is the cover. -->
             <div class="form-field">
                 <span class="form-label">
-                    Photo <span class="form-optional">(optional)</span>
+                    Photos <span class="form-optional">(optional · up to 5)</span>
                 </span>
 
                 <div class="image-upload">
                     <input class="image-input" id="listing-image" name="image"
-                           type="file"
+                           type="file" multiple
                            accept="image/jpeg,image/png,image/webp"
                            aria-describedby="listing-image-error">
 
-                    <!-- Shown when no photo is selected -->
+                    <!-- The photos already added (built by seller-studio.js) -->
+                    <div class="photo-grid" id="listing-photo-grid" hidden></div>
+
+                    <!-- Hidden when 5 photos are added -->
                     <label class="image-dropzone" id="listing-image-dropzone"
                            for="listing-image">
                         <span class="image-dropzone-icon" aria-hidden="true">
@@ -389,31 +537,10 @@
                         </span>
 
                         <span class="image-dropzone-text">
-                            <strong>Add a photo</strong>
-                            <small>Drag and drop or browse · JPG, PNG or WebP · up to 5 MB</small>
+                            <strong>Add photos</strong>
+                            <small>Drag and drop or browse · JPG, PNG or WebP · up to 5 MB each</small>
                         </span>
                     </label>
-
-                    <!-- Shown after a photo is selected -->
-                    <div class="image-preview" id="listing-image-preview" hidden>
-                        <img class="image-preview-img" id="listing-image-preview-img"
-                             alt="Selected item photo preview">
-
-                        <div class="image-preview-body">
-                            <strong>Photo added</strong>
-                            <small>This will show on your listing.</small>
-
-                            <div class="image-preview-actions">
-                                <label class="ghost-button image-change" for="listing-image">
-                                    Change
-                                </label>
-                                <button type="button" class="ghost-button"
-                                        id="listing-image-remove">
-                                    Remove
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <p class="field-error" id="listing-image-error" role="alert"></p>
@@ -439,7 +566,7 @@
         </form>
     </dialog>
 
-    <!-- NEW: Transfer funds dialog (opens from the Payouts tab) -->
+    <!-- Transfer funds dialog (opens from the Payouts tab) -->
     <dialog class="modal transfer-modal" id="transfer-dialog" aria-labelledby="transfer-dialog-title">
         <form class="modal-form" id="transfer-form" novalidate>
             <div class="modal-head">
@@ -493,7 +620,7 @@
                 </div>
             </div>
 
-            <!-- NEW: amount to transfer (only this amount is deducted from the balance) -->
+            <!-- Amount to transfer (only this amount is deducted from the balance) -->
             <div class="form-field">
                 <label class="form-label" for="transfer-amount">Amount to transfer</label>
 
@@ -539,8 +666,8 @@
         </form>
     </dialog>
 
-    <script src="JS/seller-studio.js?v=3" defer></script>
-    <!-- NEW: must load AFTER seller-studio.js so the logged-in name always wins -->
+    <script src="JS/seller-studio.js?v=4" defer></script>
+    <!-- Must load AFTER seller-studio.js so the logged-in name always wins -->
     <script src="JS/user-session.js" defer></script>
 </body>
 </html>

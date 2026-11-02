@@ -2,7 +2,13 @@
 
 const FYND_CATEGORIES = ['Shoes', 'T-shirts', 'Pants', 'Jackets', 'Accessories', 'Other'];
 const FYND_CONDITIONS = ['Like new', 'Good', 'Fair'];
-const FYND_UPLOAD_DIR = __DIR__ . '/uploads';
+
+/* FIXED: this file lives in FYND/PHP/, but the pages (Fynd2.html,
+   Seller-Studio.html) request photos as "uploads/<file>" relative to the
+   FYND root. The uploads folder must therefore be FYND/uploads, one level
+   up from this file. */
+const FYND_UPLOAD_DIR = __DIR__ . '/../uploads';
+
 const FYND_MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 /** An error whose message is safe to show to the user. */
@@ -27,7 +33,7 @@ class FyndUserError extends Exception
    --------------------------------------------------------- */
 function fynd_json(array $data, $status = 200)
 {
-    // Throw away any stray output (for example a blank line before <?php in db.php)
+    // Throw away any stray output (for example a blank line before the opening PHP tag in db.php)
     while (ob_get_level() > 0) {
         ob_end_clean();
     }

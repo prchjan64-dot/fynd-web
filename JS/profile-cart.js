@@ -114,7 +114,6 @@
       shop: String(i.shop || 'FYND seller'),
       size: String(i.size || ''),
       price: Number(i.price) || 0,
-      qty: Math.min(99, Math.max(1, parseInt(i.qty, 10) || 1)),
       image: i.image ? String(i.image) : ''
     };
   }
@@ -142,7 +141,7 @@
     if (!local.length) return;
 
     const lines = local
-      .map(i => ({ product_id: parseInt(i.id, 10), quantity: i.qty }))
+      .map(i => ({ product_id: parseInt(i.id, 10) }))
       .filter(i => i.product_id > 0);
 
     try {
@@ -153,6 +152,12 @@
     } catch (e) {
       /* 401 = not logged in: the browser cart stays as it is */
       console.warn(TAG, 'Could not move the browser cart to your account:', e.message);
+
+      /* FIXED: any other failure used to be silent, so items saved in this
+         browser simply never showed up. Now the reason is shown. */
+      if (e.status !== 401) {
+        showError('Items saved in this browser could not be moved to your account: ' + e.message);
+      }
     }
   }
 
@@ -191,11 +196,6 @@
         ? `<div class="cart-tile cart-has-img" aria-hidden="true"><img src="${esc(it.image)}" alt=""></div>`
         : `<div class="cart-tile cart-t${idx % 3 + 1}" aria-hidden="true">${esc(it.name.charAt(0))}</div>`}
         <div class="cart-info"><strong>${esc(it.name)}</strong><span>${esc(it.shop)}${it.size ? ' · ' + esc(it.size) : ''}</span></div>
-        <div class="cart-qty">
-          <button type="button" class="cart-qty-btn" data-act="minus" aria-label="Decrease quantity">−</button>
-          <span class="cart-qty-val" aria-live="polite"></span>
-          <button type="button" class="cart-qty-btn" data-act="plus" aria-label="Increase quantity">+</button>
-        </div>
         <strong class="cart-price"></strong>
         <button type="button" class="cart-remove" data-act="remove" aria-label="Remove ${esc(it.name)}">×</button>
       </li>`).join('');
@@ -206,12 +206,10 @@
     items.forEach(it => {
       const li = $(`.cart-item[data-id="${CSS.escape(it.id)}"]`, list);
       if (!li) return;
-      $('.cart-qty-val', li).textContent = it.qty;
-      $('.cart-price', li).textContent = peso(it.price * it.qty);
-      $('[data-act="minus"]', li).disabled = it.qty <= 1;
+      $('.cart-price', li).textContent = peso(it.price);
       $('.cart-item-check', li).checked = it.selected;
       li.classList.toggle('unselected', !it.selected);
-      if (it.selected) { subtotal += it.price * it.qty; picked++; }
+      if (it.selected) { subtotal += it.price; picked++; }
     });
 
     const shipping = picked ? SHIPPING_FEE : 0;
@@ -235,31 +233,7 @@
     return li ? items.find(i => i.id === li.dataset.id) : null;
   };
 
-  /* Quantity changes are sent to the server after a short pause,
-     so quickly pressing + or − does not send a request for every click. */
-  const qtyTimers = {};
-
-  function pushQty(it) {
-    if (!useServer) { saveLocalCart(); return; }
-
-    clearTimeout(qtyTimers[it.id]);
-    qtyTimers[it.id] = setTimeout(async () => {
-      try {
-        await api(CART_API, {
-          method: 'POST',
-          body: { action: 'set_qty', product_id: parseInt(it.id, 10), quantity: it.qty }
-        });
-        showError('');
-      } catch (e) {
-        console.error(TAG, e.message);
-        showError('Could not update your cart: ' + e.message);
-        loadItems();
-      }
-    }, 400);
-  }
-
   async function removeItem(it) {
-    clearTimeout(qtyTimers[it.id]);
     items = items.filter(i => i !== it);
     renderList();
     update();
@@ -284,12 +258,7 @@
     const it = btn && itemOf(btn);
     if (!it) return;
 
-    if (btn.dataset.act === 'remove') { removeItem(it); return; }
-    if (btn.dataset.act === 'plus') it.qty = Math.min(99, it.qty + 1);
-    if (btn.dataset.act === 'minus') it.qty = Math.max(1, it.qty - 1);
-
-    update();
-    pushQty(it);
+    if (btn.dataset.act === 'remove') removeItem(it);
   });
 
   list.addEventListener('change', e => {

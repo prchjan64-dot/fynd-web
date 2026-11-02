@@ -1,26 +1,36 @@
-/* CHANGED: display font (Sora ExtraBold), used only for the hero headline */
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@800&display=swap");
+/* Fonts are set in ONE place (see --font-display / --font-body in :root).
+   Hero headline = Plus Jakarta Sans (wide geometric sans, close to the "Modernist" look),
+   weight 700 with 800 for emphasis. Plus Jakarta Sans tops out at 800, so extra
+   heaviness comes from a thin text-stroke (see the hero headline rules below).
+   Section headings = Fraunces (--font-display). Body = DM Sans (everything else).
+   To try another pairing, change the @import line and the font rules. */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,800;9..144,900&family=Plus+Jakarta+Sans:wght@700;800&family=Instrument+Serif&family=DM+Sans:wght@400;500;600;700;800;900&display=swap");
 
 /* ==================================================
    FYND MARKETPLACE
-   Complete Stylesheet - SUNNY PASTEL PALETTE (Buttercup / Dewy Blue)
-   HERO uses the Neon Dusk palette: #00D4FF + #020024 (see --hero-* below)
+   Complete Stylesheet - ROYAL BLUE / POWDER BLUE / WARM BEIGE PALETTE
+   Royal Blue #162660   Powder Blue #D0E6FD   Warm Beige #F1E4D1
+   HERO uses the same palette (see --hero-* below)
    ================================================== */
 
 :root {
-  --p-950: #243B55;   /* deep slate blue: text, footer, dark buttons (derived) */
-  --p-800: #3F6EA5;   /* main accent: buttons, links, active states (derived from Morning Breeze) */
-  --p-400: #7FA8D6;   /* Morning Breeze */
-  --p-200: #FFF2B2;   /* Buttercup Sky */
-  --p-50:  #FFF7D6;   /* Cloud Puff */
+  --p-950: #0B1440;   /* deep Royal Blue (derived): text, footer, dark buttons */
+  --p-800: #162660;   /* Royal Blue: buttons, links, active states */
+  --p-400: #86A9DE;   /* mid blue (derived): borders, hover, soft accents */
+  --p-200: #D0E6FD;   /* Powder Blue: cards, pills, tinted backgrounds */
+  --p-50:  #F8F2E9;   /* light Warm Beige tint (derived): section backgrounds */
 
-  --sun: #FFE08A;     /* Sunwashed: highlight badges */
-  --dew: #A8C6E7;    /* Dewy Blue: banner, soft accents */
+  --sun: #F1E4D1;     /* Warm Beige: highlight badges */
+  --dew: #D0E6FD;     /* Powder Blue: banner, soft accents */
 
-  --ink: #243B55;     /* text on light blue / yellow */
-  --line: #A8C6E7;    /* borders */
-  --line-soft: #F1E9C0;
-  --muted: #556F8F;   /* secondary text */
+  --ink: #0B1440;     /* text on Powder Blue / Warm Beige */
+  --line: #A9C8EE;    /* borders (derived) */
+  --line-soft: #EADFCF;  /* faint borders (derived from Warm Beige) */
+  --muted: #4A5A8C;   /* secondary text (derived) */
+
+  /* font variables */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
 }
 
 /* ============ BASE ============ */
@@ -43,14 +53,14 @@ body {
 }
 
 body {
-  font-family: "Montserrat", sans-serif;
+  font-family: var(--font-body);
   color: var(--p-950);
   background: #ffffff;
   overflow-x: hidden;
 }
 
 #brand-quote {
-  font-family: "Montserrat";
+  font-family: var(--font-body);
 }
 
 button,
@@ -132,7 +142,7 @@ header nav input[type="text"] {
   flex-shrink: 1;
   border: 1px solid var(--line);
   border-radius: 30px;
-  background: var(--p-50);
+  background: #ffffff;
   color: var(--p-950);
   font-size: 14px;
   outline: none;
@@ -146,7 +156,7 @@ header nav input[type="text"]::placeholder {
 header nav input[type="text"]:focus {
   background: #ffffff;
   border-color: var(--p-800);
-  box-shadow: 0 0 0 3px rgba(63, 110, 165, 0.16);
+  box-shadow: 0 0 0 3px rgba(22, 38, 96, 0.16);
 }
 
 header nav a {
@@ -191,13 +201,14 @@ header nav a:first-of-type {
 
 /* ============ HERO SECTION ============ */
 
-/* CHANGED: background is now the Neon Dusk palette.
-   Colors: #00D4FF (cyan) and #020024 (deep navy).
-   Dark navy on the left (where the text is), cyan glow rising from the
+/* Background uses the Royal Blue palette.
+   Colors: #162660 (Royal Blue), #86A9DE (blue glow) and #F1E4D1 (Warm Beige text).
+   Royal Blue on the left (where the text is), blue glow rising from the
    bottom right behind the photos. */
 .hero {
-  --hero-cyan: #00D4FF;
-  --hero-navy: #020024;
+  --hero-light: #F1E4D1;
+  --hero-glow: #86A9DE;
+  --hero-navy: #162660;
 
   position: relative;
   display: block;
@@ -205,12 +216,12 @@ header nav a:first-of-type {
   min-height: max(calc(100vh - 68px), 840px);
   background:
     radial-gradient(ellipse 60% 80% at 95% 100%,
-      var(--hero-cyan) 0%,
-      rgba(0, 212, 255, 0.55) 35%,
-      rgba(0, 212, 255, 0) 100%),
+      var(--hero-glow) 0%,
+      rgba(134, 169, 222, 0.55) 35%,
+      rgba(134, 169, 222, 0) 100%),
     radial-gradient(ellipse 45% 55% at 100% 0%,
-      rgba(0, 212, 255, 0.28) 0%,
-      rgba(0, 212, 255, 0) 100%),
+      rgba(134, 169, 222, 0.28) 0%,
+      rgba(134, 169, 222, 0) 100%),
     var(--hero-navy);
   overflow: hidden;
 }
@@ -219,7 +230,7 @@ header nav a:first-of-type {
   position: absolute;
   top: 100px;
   left: 45px;
-  color: var(--hero-cyan);           /* CHANGED */
+  color: var(--hero-light);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.4;
@@ -229,7 +240,7 @@ header nav a:first-of-type {
   position: absolute;
   top: 165px;
   left: 45px;
-  color: var(--hero-cyan);           /* CHANGED */
+  color: var(--hero-light);
   font-size: 72px;
   font-weight: 800;
   line-height: 1.22;
@@ -242,7 +253,7 @@ header nav a:first-of-type {
   left: 45px;
   width: 45%;
   max-width: 540px;
-  color: rgba(255, 255, 255, 0.88);  /* CHANGED */
+  color: rgba(255, 255, 255, 0.88);
   font-size: 18px;
   font-weight: 400;
   line-height: 1.6;
@@ -252,7 +263,7 @@ header nav a:first-of-type {
    --u is the "size unit": it is 1px on wide screens and shrinks smoothly
    when the window gets narrower, so the images are never cut off.
    Every image size below is written as (number * --u).
-   CHANGED: --u is now defined on .hero (see the alignment fix block below),
+   --u is defined on .hero (see the alignment fix block below),
    and the collage sits lower (top: 140px) so there is no big empty space
    under the pictures. */
 .hero-gallery {
@@ -268,24 +279,24 @@ header nav a:first-of-type {
   display: block;
   object-fit: cover;
   border-radius: calc(18 * var(--u));
-  box-shadow: 0 24px 60px rgba(0, 212, 255, 0.28);   /* CHANGED: cyan glow */
+  box-shadow: 0 24px 60px rgba(134, 169, 222, 0.35);   /* blue glow */
 }
 
 /* Images are positioned by their order in the HTML:
    1 = backpack, 2 = shirt, 3 = camera. */
 
-/* Image 1: backpack, top left. CHANGED: cyan stroke */
+/* Image 1: backpack, top left. Warm Beige stroke */
 .hero-gallery .brand-img:nth-child(1) {
   top: calc(60 * var(--u));
   left: 0;
   z-index: 1;
   width: calc(279 * var(--u));
   height: calc(358 * var(--u));
-  border: 4px solid var(--hero-cyan);
+  border: 4px solid var(--hero-light);
 }
 
 /* Image 2: shirt, bottom center, on top of the other two.
-   CHANGED: deep navy stroke */
+   Deep navy stroke */
 .hero-gallery .brand-img:nth-child(2) {
   top: calc(241 * var(--u));
   left: calc(165 * var(--u));
@@ -295,7 +306,7 @@ header nav a:first-of-type {
   border: 4px solid var(--hero-navy);
 }
 
-/* Image 3: camera, top right. CHANGED: white stroke */
+/* Image 3: camera, top right. White stroke */
 .hero-gallery .brand-img:nth-child(3) {
   top: 0;
   left: calc(353 * var(--u));
@@ -305,7 +316,7 @@ header nav a:first-of-type {
   border: 4px solid #ffffff;
 }
 
-/* CHANGED: buttons now follow the paragraph, so they stay evenly spaced
+/* Buttons follow the paragraph, so they stay evenly spaced
    under the bigger headline. */
 #btn1,
 #btn2 {
@@ -331,27 +342,27 @@ header nav a:first-of-type {
 
 #btn1 {
   left: 45px;
-  color: var(--hero-navy);               /* CHANGED */
-  background: var(--hero-cyan);          /* CHANGED */
-  border: 2px solid var(--hero-cyan);    /* CHANGED */
+  color: var(--hero-navy);
+  background: var(--hero-light);
+  border: 2px solid var(--hero-light);
 }
 
 #btn1:hover {
-  color: var(--hero-navy);               /* CHANGED */
-  background: #ffffff;                   /* CHANGED */
-  border-color: #ffffff;                 /* CHANGED */
+  color: var(--hero-navy);
+  background: #ffffff;
+  border-color: #ffffff;
 }
 
 #btn2 {
   left: 320px;
-  color: var(--hero-cyan);               /* CHANGED */
+  color: var(--hero-light);
   background: transparent;
-  border: 2px solid var(--hero-cyan);    /* CHANGED */
+  border: 2px solid var(--hero-light);
 }
 
 #btn2:hover {
-  background: rgba(0, 212, 255, 0.14);   /* CHANGED */
-  border-color: var(--hero-cyan);        /* CHANGED */
+  background: rgba(241, 228, 209, 0.14);
+  border-color: var(--hero-light);
 }
 
 #btn1 svg,
@@ -821,9 +832,7 @@ header nav a:first-of-type {
 
 /* ==================================================
    FYND HERO ALIGNMENT FIX
-   CHANGED in this block:
    - --fs      = size of the "Find it. Love it. FYND it." headline.
-                 CHANGED: sized for the new headline font (Sora ExtraBold)
    - --u       = collage size unit (moved here from .hero-gallery)
    - --H0      = height the hero content needs
    - --shift   = pushes everything down a little on tall screens so the
@@ -862,25 +871,47 @@ header nav a:first-of-type {
     width: min(580px, 46%);
 }
 
-/* CHANGED: Sora ExtraBold is used ONLY on this headline.
-   max-width in "em" keeps it on 3 lines:
-   Find it. / Love it. / FYND it. */
+/* Headline uses Plus Jakarta Sans (wide geometric sans, close to the
+   "Modernist" look).
+   WEIGHTS: the font only has weights 200 to 800, and the @import loads 700
+   and 800. So the real choices are 700 (base) and 800 (emphasis). Values like
+   1000 or 1200 do NOT make it bolder (1000 falls back to 800, 1200 is invalid
+   CSS and is ignored).
+   EXTRA HEAVINESS: -webkit-text-stroke adds a thin outline in the same color
+   as the text, which thickens every letter. Raise 0.015em for bolder text
+   (try up to 0.03em) or set it to 0 to turn the effect off.
+   max-width in "em" keeps the headline on 3 lines:
+   Find it. / Love it. / FYND it.
+   If the lines wrap differently, adjust 5.4em (try 4.8em to 6em). */
 .hero #brand-quote h1 {
     position: static;
     width: 100%;
-    max-width: 5.1em;
-    font-family: "Sora", "Arial Black", Impact, sans-serif;
+    max-width: 5.4em;
+    font-family: "Montserrat", "Arial", sans-serif;
     font-size: var(--fs);
     font-weight: 800;
-    color: var(--hero-cyan);
-    line-height: 1.1;
-    letter-spacing: -0.03em;
+    color: var(--hero-light);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    -webkit-text-stroke: 0.025em currentColor;
+    paint-order: stroke fill;
     overflow-wrap: break-word;
 }
 
 /* in case "FYND" sits inside a span, keep the same color */
 .hero #brand-quote h1 * {
     color: inherit;
+}
+
+/* FONT WEIGHT FOR EMPHASIS
+   Anything wrapped in <span>, <strong> or <b> inside the headline (in your
+   HTML that is the word FYND) gets the extra-bold weight (800) plus a thicker
+   stroke, so it stands out from "Find it." and "Love it." */
+.hero #brand-quote h1 span,
+.hero #brand-quote h1 strong,
+.hero #brand-quote h1 b {
+    font-weight: 800;
+    -webkit-text-stroke: 0.03em currentColor;
 }
 
 .hero > p {
@@ -927,7 +958,7 @@ header nav a:first-of-type {
     }
 
     .hero #brand-quote h1 {
-        font-size: clamp(38px, 6.4vw, 58px);   /* CHANGED */
+        font-size: clamp(38px, 6.4vw, 58px);
         line-height: 1.12;
     }
 
@@ -996,7 +1027,7 @@ header nav a:first-of-type {
     .hero #brand-quote h1 {
         position: static;
         width: 100%;
-        font-size: clamp(38px, 11.5vw, 60px);   /* CHANGED */
+        font-size: clamp(38px, 11.5vw, 60px);
         line-height: 1.06;
     }
 
@@ -1065,7 +1096,7 @@ header nav a:first-of-type {
     }
 
     .hero #brand-quote h1 {
-        font-size: 36px;   /* CHANGED */
+        font-size: 36px;
     }
 
     .hero-gallery {
@@ -1233,7 +1264,7 @@ header nav a:first-of-type {
     padding: 20px 20px 24px;
     box-sizing: border-box;
     color: var(--p-950);
-    font-family: "Montserrat", sans-serif;
+    font-family: var(--font-body);
 }
 
 .featured-header {
@@ -1640,7 +1671,7 @@ header nav a:first-of-type {
 
 .newsletter .subscribe:focus-within {
     border-color: var(--p-800);
-    box-shadow: 0 0 0 3px rgba(63, 110, 165, 0.16);
+    box-shadow: 0 0 0 3px rgba(22, 38, 96, 0.16);
 }
 
 .newsletter .subscribe input[type="email"] {
@@ -1666,7 +1697,7 @@ header nav a:first-of-type {
 }
 
 .newsletter .subscribe input[type="email"]::placeholder {
-    color: #8AA0BC;
+    color: #86A9DE;
     opacity: 1;
 }
 
@@ -1732,7 +1763,7 @@ footer * {
     margin: 0 auto;
     padding: 52px 40px;
 
-    border-bottom: 1px solid rgba(255, 242, 178, 0.14);
+    border-bottom: 1px solid rgba(241, 228, 209, 0.14);
 }
 
 footer .brand {
@@ -1747,7 +1778,7 @@ footer .brand {
     padding: 0;
 }
 
-/* CHANGED: the footer logo is now the FYND image (logo2.0.jpg)
+/* The footer logo is the FYND image (logo2.0.jpg)
    instead of the blue box. */
 footer .brand .logo,
 footer .brand .footer-logo {
@@ -1969,11 +2000,11 @@ footer .links a:hover {
     border-radius: 24px;
     background: #ffffff;
     color: var(--p-950);
-    font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-family: var(--font-body);
 }
 
 .sell-dialog::backdrop {
-    background: rgba(36, 59, 85, 0.6);
+    background: rgba(11, 20, 64, 0.6);
 }
 
 .sell-dialog-body {
@@ -2061,11 +2092,11 @@ footer .links a:hover {
     background: transparent;
     color: var(--p-950);
     overflow: visible;
-    font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-family: var(--font-body);
 }
 
 .product-dialog::backdrop {
-    background: rgba(36, 59, 85, 0.72);
+    background: rgba(11, 20, 64, 0.72);
 }
 
 body:has(.product-dialog[open]) {
@@ -2096,12 +2127,15 @@ body:has(.product-dialog[open]) {
 }
 
 .product-dialog-back:hover,
-.product-dialog-back:focus,
-.product-dialog-back:focus-visible,
 .product-dialog-back:active {
-    border-color: var(--p-800);
-    background: #ffffff;
-    color: var(--p-800);
+    border-color: var(--p-950);
+    background: var(--p-950);
+    color: #ffffff;
+}
+
+/* Focus (the dialog focuses this link when it opens) must NOT change the
+   colors, only show a ring for keyboard users. */
+.product-dialog-back:focus {
     outline: none;
 }
 
@@ -2463,12 +2497,12 @@ body:has(.product-dialog[open]) {
     border-radius: 22px;
     background: #fff;
     color: var(--p-950);
-    font-family: "Montserrat", sans-serif;
+    font-family: var(--font-body);
     box-shadow: 0 24px 80px rgba(0, 0, 0, .25);
 }
 
 .checkout-dialog::backdrop {
-    background: rgba(36, 59, 85, .66);
+    background: rgba(11, 20, 64, .66);
     backdrop-filter: blur(3px);
 }
 
@@ -2772,7 +2806,7 @@ body:has(.product-dialog[open]) {
 }
 
 #checkout-dialog::backdrop {
-    background: rgba(36, 59, 85, .7);
+    background: rgba(11, 20, 64, .7);
     backdrop-filter: blur(3px);
 }
 
@@ -3087,5 +3121,458 @@ body:has(.product-dialog[open]) {
     .products-section .product-favorite svg {
         width: 18px;
         height: 18px;
+    }
+}
+
+/* ==================================================
+   PRODUCT CARD HOVER ZOOM (applies to all items)
+   Hover over any item and it zooms in, no click needed.
+================================================== */
+
+.products-section .products-grid .product {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.products-section .product-image-container {
+    transition: box-shadow 0.3s ease;
+}
+
+.products-section .product-image-container .product-img {
+    transition: transform 0.4s ease;
+}
+
+/* Only on devices that actually have a mouse/hover */
+@media (hover: hover) and (pointer: fine) {
+
+    /* The card "pops": white background, shadow and a small lift.
+       No scaling, so the text never zooms. */
+    .products-section .products-grid .product:hover {
+        background: #ffffff;
+        box-shadow: 0 18px 40px rgba(11, 20, 64, 0.18);
+        transform: translateY(-6px);
+        z-index: 2;
+    }
+
+    /* Only the photo zooms, inside its frame */
+    .products-section .products-grid .product:hover .product-img {
+        transform: scale(1.08);
+    }
+
+    /* Arrow badge nudges up-right */
+    .products-section .products-grid .product:hover .product-image-arrow {
+        background: #ffffff;
+        transform: translate(2px, -2px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .products-section .products-grid .product,
+    .products-section .product-image-container,
+    .products-section .product-image-container .product-img {
+        transition: none;
+    }
+}
+
+/* ==================================================
+   PRODUCT CARD REDESIGN (white card, like the reference)
+   - white rounded card with soft shadow
+   - badges sit on top of the photo
+   - name on the left, price on the right, seller below
+   Put this at the very bottom so it overrides the older card styles.
+================================================== */
+
+.products-section .products-grid .product {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    padding: 20px 20px 22px;
+    border-radius: 28px;
+    background: transparent;   /* white card only appears on hover */
+    box-shadow: none;
+    transition:
+        background-color 0.3s ease,
+        box-shadow 0.3s ease,
+        transform 0.3s ease;
+}
+
+/* Photo (and its wrapper, if the JS adds one) fills the first row */
+.products-section .products-grid .product > .product-card-media,
+.products-section .products-grid .product > .product-image-link {
+    grid-column: 1 / -1;
+    grid-row: 1;
+}
+
+.products-section .product-image-container {
+    aspect-ratio: 0.86 / 1;
+    border-radius: 18px;
+}
+
+.products-section .product-image-container .product-img {
+    border-radius: 18px;
+}
+
+/* The little arrow badge is replaced by the Add to bag pill */
+.products-section .product-image-arrow {
+    display: none;
+}
+
+/* Badges float on top-left of the photo */
+.products-section .products-grid .product .product-meta {
+    position: absolute;
+    top: 32px;
+    left: 32px;
+    z-index: 3;
+    min-height: 0;
+    margin: 0;
+    gap: 8px;
+}
+
+.products-section .product-meta .badge {
+    min-height: 26px;
+    padding: 6px 13px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #0B1440;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.products-section .product-meta .badge-preloved {
+    background: #F1E4D1;   /* Warm Beige highlight */
+    color: #0B1440;
+}
+
+.products-section .product-category {
+    display: none;
+}
+
+/* Favorite button: top-right of the photo */
+.products-section .product-favorite {
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+}
+
+/* Let the price / store name join the card grid */
+.products-section .product-bottom,
+.products-section .product-price-info {
+    display: contents;
+}
+
+.products-section .products-grid .product .product-name {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 16px 0 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.products-section .product-bottom .price {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    margin: 16px 0 0;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: right;
+}
+
+.products-section .product-bottom .store-name {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+/* The old + button is hidden (no "Add to bag"). It stays in the page so
+   clicking the photo can still open the item details. */
+.products-section .products-grid .product .product-add {
+    display: none;
+}
+
+@media (max-width: 480px) {
+    .products-section .products-grid .product {
+        padding: 14px 14px 16px;
+        border-radius: 22px;
+    }
+
+    .products-section .products-grid .product .product-meta {
+        top: 24px;
+        left: 24px;
+    }
+
+    .products-section .products-grid .product .product-name,
+    .products-section .product-bottom .price {
+        font-size: 14px;
+    }
+}
+
+/* Favorited star on the cards: Royal Blue circle + Powder Blue star, same as the dialog */
+.products-section .product-favorite[aria-pressed="true"] {
+    background: var(--p-800);
+    color: var(--p-200);
+}
+
+.products-section .product-favorite[aria-pressed="true"] svg {
+    fill: currentColor;
+}
+
+/* ==================================================
+   DISPLAY FONT ON THE MAIN SECTION HEADINGS
+   (kept at the very bottom so it overrides the earlier rules)
+================================================== */
+
+.products-section .products-heading,
+.featured-banner-text h2,
+.featured-quote h3,
+.newsletter .left h1 {
+    font-family: var(--font-display);
+    font-optical-sizing: auto;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+/* ==================================================
+   FEATURED SECTION SPACING FIX
+   More room between the banner, the two cards, the
+   newsletter and the footer, with matching rounded corners.
+   (Keep this block at the very bottom of style.css)
+================================================== */
+
+.featured-collection {
+    padding: 48px 20px 40px;
+}
+
+.featured-header {
+    margin-bottom: 40px;
+}
+
+/* Banner: roomier text and a tighter headline */
+.featured-banner-text {
+    padding: 44px 44px;
+}
+
+.featured-banner-text h2 {
+    margin: 0 0 22px;
+    line-height: 1.12;
+}
+
+.featured-banner-text p {
+    line-height: 1.6;
+}
+
+/* The two cards under the banner */
+.featured-bottom {
+    gap: 20px;
+    margin-top: 28px;
+}
+
+.featured-quote {
+    padding: 40px 40px 40px 96px;
+}
+
+.how-it-works {
+    padding: 28px 36px 30px;
+}
+
+.how-it-works h4 {
+    margin-bottom: 18px;
+}
+
+.step {
+    margin-bottom: 18px;
+}
+
+.step p {
+    margin-top: 3px;
+    line-height: 1.5;
+}
+
+/* Newsletter: its own rounded card with space above it */
+.featured-collection .newsletter {
+    width: 100%;
+    margin: 28px 0 0;
+    overflow: hidden;
+    border: none;
+    border-radius: 27px;
+}
+
+.newsletter .container {
+    padding: 64px 48px;
+}
+
+/* Footer: its own rounded card with space above it */
+.featured-collection footer {
+    margin-top: 28px;
+    overflow: hidden;
+    border-radius: 27px;
+}
+
+.footer-container {
+    padding: 44px 48px;
+    border-bottom: none;
+}
+
+/* Tablets */
+@media (max-width: 768px) {
+    .featured-collection {
+        padding: 32px 16px 32px;
+    }
+
+    .featured-banner-text {
+        padding: 32px 28px;
+    }
+
+    .featured-bottom {
+        gap: 16px;
+        margin-top: 20px;
+    }
+
+    .featured-quote {
+        padding: 56px 28px 32px;
+    }
+
+    .how-it-works {
+        padding: 26px 26px 28px;
+    }
+
+    .featured-collection .newsletter,
+    .featured-collection footer {
+        margin-top: 20px;
+    }
+
+    .newsletter .container {
+        padding: 48px 28px;
+    }
+
+    .footer-container {
+        padding: 36px 28px;
+    }
+}
+
+/* Phones */
+@media (max-width: 480px) {
+    .featured-collection {
+        padding: 24px 14px 28px;
+    }
+
+    .featured-banner-text {
+        padding: 28px 22px;
+    }
+
+    .featured-collection .newsletter,
+    .featured-collection footer {
+        border-radius: 20px;
+    }
+
+    .newsletter .container {
+        padding: 40px 22px;
+    }
+
+    .footer-container {
+        padding: 30px 22px;
+    }
+}
+
+/* ==================================================
+   "VIEW ALL PIECES" BUTTON RESTYLE
+   Solid Royal Blue pill + round beige arrow badge.
+   (Keep this block at the very bottom of style.css)
+================================================== */
+
+.view-pieces-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 8px 8px 8px 28px;
+    border: none;
+    border-radius: 999px;
+    background: var(--p-800);
+    color: #F1E4D1;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    box-shadow:
+        0 10px 24px rgba(22, 38, 96, 0.28),
+        inset 0 0 0 1px rgba(241, 228, 209, 0.12);
+    transition:
+        background-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.25s ease;
+}
+
+/* the round arrow badge */
+.view-pieces-btn span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #F1E4D1;
+    color: var(--p-800);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    transition:
+        background-color 0.25s ease,
+        transform 0.35s ease;
+}
+
+.view-pieces-btn:hover {
+    background: var(--p-950);
+    transform: translateY(-3px);
+    box-shadow:
+        0 16px 32px rgba(22, 38, 96, 0.38),
+        inset 0 0 0 1px rgba(241, 228, 209, 0.18);
+}
+
+/* the arrow turns from up-right to right */
+.view-pieces-btn:hover span {
+    background: #ffffff;
+    transform: rotate(45deg);
+}
+
+.view-pieces-btn:active {
+    transform: translateY(-1px);
+}
+
+.view-pieces-btn:focus-visible {
+    outline: 3px solid var(--p-400);
+    outline-offset: 4px;
+}
+
+@media (max-width: 480px) {
+    .view-pieces-btn {
+        gap: 12px;
+        padding: 6px 6px 6px 22px;
+        font-size: 14px;
+    }
+
+    .view-pieces-btn span {
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .view-pieces-btn,
+    .view-pieces-btn span {
+        transition: none;
+    }
+
+    .view-pieces-btn:hover,
+    .view-pieces-btn:hover span {
+        transform: none;
     }
 }
