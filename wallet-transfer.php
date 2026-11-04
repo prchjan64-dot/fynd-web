@@ -58,6 +58,32 @@ if ($amount <= 0) {
     wallet_json(422, false, 'Enter an amount greater than 0.');
 }
 
+$context = stream_context_create([
+    'http' => [
+        'method' => 'POST',
+        'header' => "Content-Type: application/json\r\n",
+        'content' => json_encode(['amount' => $amount]),
+        'timeout' => 3,
+        'ignore_errors' => true
+    ]
+]);
+
+$response = @file_get_contents(
+    'http://127.0.0.1:5002/validate-transfer',
+    false,
+    $context
+);
+
+if ($response === false) {
+    wallet_json(502, false, 'Could not connect to Python API.');
+}
+
+$result = json_decode($response, true);
+
+if (!is_array($result) || empty($result['success'])) {
+    wallet_json(422, false, 'Python rejected the transfer amount.');
+}
+
 try {
     $pdo = wallet_pdo();
 

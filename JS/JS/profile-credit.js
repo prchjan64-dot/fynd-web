@@ -332,18 +332,27 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         } catch (err) {
             showStatus("Could not add funds: " + err.message, "error");
-        } finally {
-            confirmButton.disabled = false;
-            confirmLabel.textContent = "Add to wallet";
+                } finally {
+            if (confirmButton) {
+                confirmButton.disabled = false;
+            }
+
+            if (confirmLabel) {
+                confirmLabel.textContent = "Add to wallet";
+            }
         }
     }
 
-    confirmButton.addEventListener("click", addFunds);
+    if (confirmButton) {
+        confirmButton.addEventListener("click", addFunds);
+    }
 
-    amountInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            addFunds();
-        }
-    });
+    if (amountInput) {
+        amountInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                addFunds();
+            }
+        });
+    }
 });

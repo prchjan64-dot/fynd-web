@@ -1,11 +1,23 @@
-
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from difflib import SequenceMatcher
 import re
 import unicodedata
 
 app = Flask(__name__)
-
+CORS(
+    app,
+    resources={
+        r"/smart-search": {
+            "origins": [
+                "http://localhost",
+                "http://127.0.0.1"
+            ]
+        }
+    },
+    methods=["POST", "OPTIONS"],
+    allow_headers=["Content-Type"]
+)
 
 @app.after_request
 def add_cors_headers(response):
