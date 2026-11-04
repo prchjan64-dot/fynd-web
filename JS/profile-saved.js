@@ -98,7 +98,9 @@
         document.body.insertAdjacentHTML('beforeend', DIALOG_HTML);
     }
 
-    /* ---------- Checkout dialog (same markup as the storefront) ---------- */
+    /* ---------- Checkout dialog ("Buy item" page) ----------
+       Same markup as the storefront checkout (Fynd2.html).
+       There is no quantity selector: an order is always 1 item. */
 
     var CHECKOUT_HTML =
         '<dialog class="checkout-dialog" id="checkout-dialog" aria-labelledby="checkout-title">' +
@@ -118,12 +120,6 @@
         '<strong id="checkout-product-seller">Seller name</strong></div>' +
         '<div class="checkout-description"><h3>Description</h3>' +
         '<p id="checkout-product-description">Product description</p></div>' +
-        '<div class="checkout-quantity"><label>Quantity</label>' +
-        '<div class="quantity-control">' +
-        '<button type="button" id="quantity-decrease" aria-label="Decrease quantity">−</button>' +
-        '<output id="checkout-quantity">1</output>' +
-        '<button type="button" id="quantity-increase" aria-label="Increase quantity">+</button>' +
-        '</div></div>' +
         '</div></section>' +
         '<aside class="checkout-summary">' +
         '<p class="checkout-summary-eyebrow">ORDER</p>' +
@@ -134,7 +130,12 @@
         '<div class="summary-divider"></div>' +
         '<div class="summary-total"><span>Total</span><strong id="summary-total">₱100.00</strong></div>' +
         '<p class="summary-note">Shipping and service fees are estimates.</p>' +
-        '<button type="button" class="checkout-submit" id="checkout-submit">Checkout <span aria-hidden="true">↗</span></button>' +
+        '<button type="button" class="checkout-submit" id="checkout-submit">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M12.5 19H4a2 2 0 01-2-2V7a2 2 0 012-2h16a2 2 0 012 2v4"/>' +
+        '<path d="M2 10h20"/><path d="M6 14h2"/><path d="m16 17 2 2 4-4"/></svg>' +
+        '<span>Checkout</span></button>' +
         '<p class="checkout-status" id="checkout-status" role="status" aria-live="polite"></p>' +
         '</aside>' +
         '</div></div></dialog>';
@@ -200,8 +201,9 @@
         }
     }
 
-    ensureStylesheet('profile-saved.css', 3);
-    ensureStylesheet('profile-checkout.css', 1);
+    /* The checkout ("Buy item") styles now live inside profile-saved.css,
+       so profile-checkout.css is no longer loaded. */
+    ensureStylesheet('profile-saved.css', 5);
     ensureDialog();
     ensureCheckoutDialog();
     ensureCount();
@@ -869,11 +871,10 @@
     var checkoutBack = document.getElementById('checkout-back');
     var checkoutClose = document.getElementById('checkout-close');
     var checkoutSubmit = document.getElementById('checkout-submit');
-    var checkoutQuantity = document.getElementById('checkout-quantity');
-    var quantityDown = document.getElementById('quantity-decrease');
-    var quantityUp = document.getElementById('quantity-increase');
 
     var currentProduct = null;
+
+    /* The quantity selector was removed, so an order is always 1 item. */
     var checkoutQty = 1;
 
     /* Same fees as the storefront checkout. */
@@ -1188,10 +1189,6 @@
         if (totalElement) {
             totalElement.textContent = peso(total);
         }
-
-        if (checkoutQuantity) {
-            checkoutQuantity.textContent = String(checkoutQty);
-        }
     }
 
     function openCheckout() {
@@ -1243,10 +1240,6 @@
             checkoutTitle.textContent = 'Order Summary';
         }
 
-        if (checkoutSubmit) {
-            checkoutSubmit.textContent = 'Checkout';
-        }
-
         if (checkoutStatus) {
             checkoutStatus.textContent = '';
         }
@@ -1274,24 +1267,6 @@
                     checkoutImageForFallback.setAttribute('data-fallback', '1');
                     checkoutImageForFallback.src = PLACEHOLDER;
                 }
-            });
-        }
-
-        if (quantityDown) {
-            quantityDown.addEventListener('click', function (event) {
-                event.preventDefault();
-
-                checkoutQty = Math.max(1, checkoutQty - 1);
-                updateCheckoutSummary();
-            });
-        }
-
-        if (quantityUp) {
-            quantityUp.addEventListener('click', function (event) {
-                event.preventDefault();
-
-                checkoutQty = Math.min(99, checkoutQty + 1);
-                updateCheckoutSummary();
             });
         }
 
