@@ -1,8 +1,27 @@
 /* ==================================================
    PROFILE → SAVED TAB
-   Product cards identical to the storefront, plus the
-   same product dialog. Load AFTER profile.css.
+   Product cards + product dialog, copied from the storefront
+   (CSS/style.css). Load AFTER profile.css.
 ================================================== */
+
+/* DM Sans = the storefront body font (the profile page does not load style.css) */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap");
+
+/* Same palette as style.css, under their own names so nothing in
+   profile.css is touched. */
+:root {
+    --pd-p950: #0B1440;   /* deep Royal Blue */
+    --pd-p800: #162660;   /* Royal Blue */
+    --pd-p400: #86A9DE;   /* mid blue */
+    --pd-p200: #D0E6FD;   /* Powder Blue */
+    --pd-sun: #F1E4D1;    /* Warm Beige */
+    --pd-ink: #0B1440;
+    --pd-line: #A9C8EE;
+    --pd-line-soft: #EADFCF;
+    --pd-muted: #4A5A8C;
+    --pd-font: "DM Sans", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    --pd-mono: "SFMono-Regular", Menlo, Consolas, "Courier New", monospace;
+}
 
 /* ---------- Saved grid (same 3-column layout as the storefront) ---------- */
 
@@ -15,25 +34,26 @@
     align-items: start;
 }
 
+/* Card: transparent at rest, white "pop" card on hover (same as the storefront) */
 #savedGrid .product {
+    position: relative;
     display: flex;
     flex-direction: column;
     min-width: 0;
-    padding: 0;
+    padding: 20px 20px 22px;
     overflow: visible;
     border: none;
-    border-radius: 0;
+    border-radius: 28px;
     background: transparent;
     color: #171717;
     box-shadow: none;
     transform: none;
-    transition: none;
+    cursor: pointer;
     font-family: inherit;
-}
-
-#savedGrid .product:hover {
-    box-shadow: none;
-    transform: none;
+    transition:
+        background-color 0.3s ease,
+        box-shadow 0.3s ease,
+        transform 0.3s ease;
 }
 
 #savedGrid .product-card-media {
@@ -76,11 +96,25 @@
     object-fit: cover;
     object-position: center;
     flex: 0 0 100%;
-    transition: transform 0.35s ease;
+    transition: transform 0.4s ease;
 }
 
-#savedGrid .product-image-link:hover .product-img {
-    transform: scale(1.025);
+/* Only on devices that actually have a mouse (same rule as the storefront) */
+@media (hover: hover) and (pointer: fine) {
+
+    /* The card "pops": white background, shadow and a small lift.
+       No scaling, so the text never zooms. */
+    #savedGrid .product:hover {
+        background: #ffffff;
+        box-shadow: 0 18px 40px rgba(11, 20, 64, 0.18);
+        transform: translateY(-6px);
+        z-index: 2;
+    }
+
+    /* Only the photo zooms, inside its frame */
+    #savedGrid .product:hover .product-img {
+        transform: scale(1.08);
+    }
 }
 
 #savedGrid .product-favorite {
@@ -175,7 +209,7 @@
     width: 31px;
     height: 31px;
     padding: 0 0 2px;
-    border: 1px solid #dedbd3;
+    border: 1px solid var(--pd-line);
     border-radius: 50%;
     background: transparent;
     color: #171717;
@@ -190,9 +224,10 @@
         color 0.2s ease;
 }
 
+/* "+" button hover: Royal Blue, same as the storefront */
 #savedGrid .product-add:hover {
-    border-color: #171717;
-    background: #171717;
+    border-color: var(--pd-p800);
+    background: var(--pd-p800);
     color: #ffffff;
 }
 
@@ -245,6 +280,13 @@
     }
 }
 
+@media (max-width: 480px) {
+    #savedGrid .product {
+        padding: 14px 14px 16px;
+        border-radius: 22px;
+    }
+}
+
 @media (max-width: 460px) {
     #savedGrid.saved-products-grid {
         grid-template-columns: minmax(0, 1fr);
@@ -252,7 +294,9 @@
 }
 
 /* ==================================================
-   PRODUCT DIALOG (same as the storefront)
+   PRODUCT DIALOG
+   Copied from the storefront (CSS/style.css):
+   same colors, fonts, sizes and hover effects.
 ================================================== */
 
 #product-dialog.product-dialog {
@@ -263,18 +307,20 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: #171717;
+    color: var(--pd-p950);
     overflow: visible;
-    font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-family: var(--pd-font);
 }
 
 .product-dialog::backdrop {
-    background: rgba(15, 15, 16, 0.62);
+    background: rgba(11, 20, 64, 0.72);
 }
 
 body:has(.product-dialog[open]) {
     overflow: hidden;
 }
+
+/* ---------- Back button ---------- */
 
 .product-dialog-back {
     grid-column: 1 / -1;
@@ -284,9 +330,9 @@ body:has(.product-dialog[open]) {
     gap: 6px;
     margin: 0;
     padding: 8px 16px;
-    border: 1.5px solid #000000;
+    border: 1.5px solid var(--pd-p800);
     border-radius: 999px;
-    background: #000000;
+    background: var(--pd-p800);
     color: #ffffff;
     font-size: 13px;
     font-weight: 600;
@@ -300,18 +346,23 @@ body:has(.product-dialog[open]) {
 }
 
 .product-dialog-back:hover,
-.product-dialog-back:focus,
-.product-dialog-back:focus-visible,
 .product-dialog-back:active {
-    border-color: #000000;
-    background: #ffffff;
-    color: #000000;
+    border-color: var(--pd-p950);
+    background: var(--pd-p950);
+    color: #ffffff;
+}
+
+/* Focus (the dialog focuses this link when it opens) must NOT change the
+   colors, only show a ring for keyboard users. */
+.product-dialog-back:focus {
     outline: none;
 }
 
 .product-dialog-back:focus-visible {
-    box-shadow: 0 0 0 3px #78aaff;
+    box-shadow: 0 0 0 3px var(--pd-p400);
 }
+
+/* ---------- Layout ---------- */
 
 .product-dialog-body {
     position: relative;
@@ -326,7 +377,7 @@ body:has(.product-dialog[open]) {
     overflow-y: auto;
     border-radius: 24px;
     background: #ffffff;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
 }
 
 .product-dialog-media {
@@ -344,12 +395,14 @@ body:has(.product-dialog[open]) {
     aspect-ratio: 1 / 1;
     max-height: calc(100vh - 280px);
     border-radius: 18px;
-    background: #e9e6df;
+    background: var(--pd-p200);
     object-fit: cover;
     object-position: center;
 }
 
-/* Favorite (star) button: used on the dialog photo AND on the cards */
+/* ---------- Favorite (star) button ----------
+   Used on the dialog photo AND on the saved cards (same as the storefront):
+   Royal Blue circle with a Powder Blue star when saved. */
 
 .product-dialog-favorite {
     position: absolute;
@@ -364,7 +417,7 @@ body:has(.product-dialog[open]) {
     border: none;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.94);
-    color: #171717;
+    color: var(--pd-p950);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     cursor: pointer;
     transition:
@@ -388,13 +441,15 @@ body:has(.product-dialog[open]) {
 }
 
 .product-dialog-favorite[aria-pressed="true"] {
-    background: #171717;
-    color: #f5c451;
+    background: var(--pd-p800);
+    color: var(--pd-p200);
 }
 
 .product-dialog-favorite[aria-pressed="true"] svg {
     fill: currentColor;
 }
+
+/* ---------- Info column ---------- */
 
 .product-dialog-info {
     display: flex;
@@ -417,31 +472,34 @@ body:has(.product-dialog[open]) {
     justify-content: center;
     min-height: 26px;
     padding: 5px 13px;
-    border-radius: 20px;
-    background: #e9e6dd;
-    color: #34342e;
-    font-size: 12px;
-    font-weight: 600;
+    border-radius: 999px;
+    background: var(--pd-p200);
+    color: var(--pd-p950);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
     line-height: 1.2;
+    text-transform: uppercase;
 }
 
 .product-dialog-badge.is-preloved {
-    background: #dce8d9;
-    color: #3c5940;
+    background: var(--pd-sun);
+    color: var(--pd-ink);
 }
 
 .product-dialog-category {
-    color: #89857c;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.8px;
+    color: var(--pd-p800);
+    font-family: var(--pd-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
     line-height: 1.4;
     text-transform: uppercase;
 }
 
 .product-dialog-title {
     margin: 0 0 12px;
-    color: #171717;
+    color: var(--pd-p950);
     font-size: clamp(24px, 2.6vw, 34px);
     font-weight: 600;
     line-height: 1.22;
@@ -451,16 +509,17 @@ body:has(.product-dialog[open]) {
 
 .product-dialog-price {
     margin: 0;
-    color: #171717;
+    color: var(--pd-p800);
     font-size: 30px;
     font-weight: 700;
     line-height: 1.3;
 }
 
 .product-dialog-seller {
-    margin: 6px 0 0;
-    color: #858078;
-    font-size: 14px;
+    margin: 8px 0 0;
+    color: var(--pd-p950);
+    font-size: 17px;
+    font-weight: 600;
     line-height: 1.4;
     overflow-wrap: anywhere;
 }
@@ -468,29 +527,31 @@ body:has(.product-dialog[open]) {
 .product-dialog-section {
     margin-top: 24px;
     padding-top: 20px;
-    border-top: 1px solid #ece9e4;
+    border-top: 1px solid var(--pd-line-soft);
 }
 
 .product-dialog-subtitle {
     margin: 0 0 10px;
-    color: #77746d;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 2px;
+    color: var(--pd-p800);
+    font-family: var(--pd-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
 }
 
 .product-dialog-description {
     margin: 0;
-    color: #34342e;
-    font-size: 15px;
+    color: var(--pd-p950);
+    font-size: 17px;
+    font-weight: 500;
     line-height: 1.7;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
 
 .product-dialog-description.is-empty {
-    color: #89857c;
+    color: var(--pd-muted);
     font-style: italic;
 }
 
@@ -498,8 +559,8 @@ body:has(.product-dialog[open]) {
     margin: 18px 0 0;
     padding: 10px 14px;
     border-radius: 12px;
-    background: #eef2f8;
-    color: #26405f;
+    background: var(--pd-p200);
+    color: var(--pd-p950);
     font-size: 13px;
     font-weight: 500;
     line-height: 1.5;
@@ -510,14 +571,16 @@ body:has(.product-dialog[open]) {
 }
 
 .product-dialog-notice.is-success {
-    background: #dce8d9;
-    color: #3c5940;
+    background: var(--pd-p400);
+    color: var(--pd-ink);
 }
 
 .product-dialog-notice.is-error {
     background: #fbe3e1;
     color: #8a2a22;
 }
+
+/* ---------- Buttons ---------- */
 
 .product-dialog-actions {
     display: flex;
@@ -533,7 +596,6 @@ body:has(.product-dialog[open]) {
     flex: 1 1 130px;
     align-items: center;
     justify-content: center;
-    gap: 8px;
     min-height: 46px;
     padding: 0 20px;
     border-radius: 999px;
@@ -550,24 +612,24 @@ body:has(.product-dialog[open]) {
 }
 
 .product-dialog-add-cart {
-    border: 1.5px solid #171717;
+    border: 1.5px solid var(--pd-p800);
     background: #ffffff;
-    color: #171717;
+    color: var(--pd-p800);
 }
 
 .product-dialog-add-cart:hover {
-    background: #f1efe9;
+    background: var(--pd-p200);
 }
 
 .product-dialog-buy {
-    border: 1.5px solid #12098d;
-    background: #12098d;
+    border: 1.5px solid var(--pd-p800);
+    background: var(--pd-p800);
     color: #ffffff;
 }
 
 .product-dialog-buy:hover {
-    border-color: #0d0766;
-    background: #0d0766;
+    border-color: var(--pd-p950);
+    background: var(--pd-p950);
 }
 
 .product-dialog-add-cart:active,
@@ -575,20 +637,34 @@ body:has(.product-dialog[open]) {
     transform: translateY(1px);
 }
 
-.product-dialog-add-cart svg,
-.product-dialog-buy svg {
-    display: block;
-    flex-shrink: 0;
-    width: 18px;
-    height: 18px;
+.product-dialog-add-cart:disabled,
+.product-dialog-buy:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .product-dialog-add-cart:focus-visible,
 .product-dialog-buy:focus-visible,
 .product-dialog-favorite:focus-visible {
-    outline: 3px solid #78aaff;
+    outline: 3px solid var(--pd-p400);
     outline-offset: 3px;
 }
+
+.product-dialog-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+}
+
+.product-dialog-actions button svg {
+    display: block;
+    flex-shrink: 0;
+    width: 19px;
+    height: 19px;
+}
+
+/* ---------- Responsive ---------- */
 
 @media (max-width: 1000px) {
     .product-dialog-body {
@@ -597,6 +673,10 @@ body:has(.product-dialog[open]) {
         row-gap: 20px;
         min-height: 0;
         padding: 28px;
+    }
+
+    .product-dialog-info {
+        padding-right: 0;
     }
 }
 
@@ -624,6 +704,10 @@ body:has(.product-dialog[open]) {
         font-size: 24px;
     }
 
+    .product-dialog-actions {
+        padding-top: 20px;
+    }
+
     .product-dialog-back {
         font-size: 12px;
         padding: 7px 13px;
@@ -647,7 +731,12 @@ body:has(.product-dialog[open]) {
     .product-dialog-favorite,
     .product-dialog-add-cart,
     .product-dialog-buy,
+    #savedGrid .product,
     #savedGrid .product-img {
         transition: none;
+    }
+
+    #savedGrid .product:hover {
+        transform: none;
     }
 }
