@@ -2092,29 +2092,74 @@
             }
         });
 
-        if (checkoutSubmit) {
-            checkoutSubmit.addEventListener('click', function (event) {
-                event.preventDefault();
+       
+if (checkoutSubmit) {
+    checkoutSubmit.addEventListener('click', async function (event) {
+        event.preventDefault();
 
-                if (!currentProduct) {
-                    return;
-                }
-
-                var total =
-                    currentProduct.price * checkoutQty +
-                    SHIPPING_FEE +
-                    SERVICE_FEE;
-
-                var checkoutStatus = checkoutElement('checkout-status');
-
-                if (checkoutStatus) {
-                    checkoutStatus.textContent =
-                        'Order summary: ' + checkoutQty +
-                        ' item(s), total ' + peso(total) +
-                        '. Connect your order/payment process to complete the purchase.';
-                }
-            });
+        if (!currentProduct) {
+            return;
         }
+
+        var checkoutStatus = checkoutElement('checkout-status');
+
+        // Read the selected payment method from the checkout modal.
+        var paymentInput = document.querySelector(
+            'input[name="payment_method"]:checked'
+        );
+
+        var paymentMethod = paymentInput
+            ? paymentInput.value.toLowerCase()
+            : '';
+
+        if (!['wallet', 'cod'].includes(paymentMethod)) {
+            if (checkoutStatus) {
+                checkoutStatus.textContent =
+                    'Please select Wallet or Cash on Delivery.';
+            }
+            return;
+        }
+
+        var total =
+            Number(currentProduct.price) * checkoutQty +
+            SHIPPING_FEE +
+            SERVICE_FEE;
+
+        if (checkoutStatus) {
+            checkoutStatus.textContent = 'Processing your order...';
+        }
+
+        checkoutSubmit.disabled = true;
+
+        try {
+           
+         var result = await api('checkout.php', {
+             method: 'POST',
+               body: {
+             product_id: Number(currentProduct.id),
+             quantity: checkoutQty,
+             payment_method: paymentMethod
+    }
+});
+
+
+            if (checkoutStatus) {
+                checkoutStatus.textContent =
+                    (result.message || 'Order placed successfully.') +
+                    ' Order ID: ' + result.order_id +
+                    '. Total: ' + peso(result.total_amount);
+            }
+
+        } catch (error) {
+            if (checkoutStatus) {
+                checkoutStatus.textContent =
+                    error.message || 'Could not place the order. Please try again.';
+            }
+        } finally {
+            checkoutSubmit.disabled = false;
+        }
+    });
+}
     }
 
     /* ---------- CATEGORY FILTERS ----------
@@ -2333,6 +2378,67 @@
             if (event.target === sellDialog) {
                 sellDialog.close();
             }
+        });
+    }
+
+    /* ---------- JOIN US + SELL WITH US (footer) ----------
+       Logged in      -> Seller Studio
+       Not logged in  -> Create Account page (email is carried over) */
+
+    var CREATE_ACCOUNT_PAGE = 'create-account.html';
+
+    function goToCreateAccountOrStudio(email) {
+        return isLoggedIn().then(function (loggedIn) {
+            if (loggedIn) {
+                window.location.href = SELL_LOGGED_IN;
+                return;
+            }
+
+            var url = CREATE_ACCOUNT_PAGE;
+
+            if (email) {
+                url += '?email=' + encodeURIComponent(email);
+            }
+
+            window.location.href = url;
+        });
+    }
+
+    var joinForm = document.getElementById('join-form');
+    var joinEmail = document.getElementById('join-email');
+    var footerSellLink = document.getElementById('footer-sell-link');
+    var joinBusy = false;
+
+    if (joinForm && joinEmail) {
+        joinForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            if (joinBusy) {
+                return;
+            }
+
+            var email = joinEmail.value.trim();
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+                joinEmail.setCustomValidity('Please enter a valid email address.');
+                joinEmail.reportValidity();
+                joinEmail.setCustomValidity('');
+                return;
+            }
+
+            joinBusy = true;
+
+            goToCreateAccountOrStudio(email).then(function () {
+                joinBusy = false;
+            });
+        });
+    }
+
+    if (footerSellLink) {
+        footerSellLink.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            goToCreateAccountOrStudio('');
         });
     }
 

@@ -181,6 +181,16 @@
     </main>
 
     <script>
+        /* ---------- Pre-fill email coming from the "Join us" box ---------- */
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var prefill = params.get("email");
+            if (prefill) {
+                document.getElementById("email").value = prefill;
+                document.getElementById("fullname").focus();
+            }
+        })();
+
         /* ---------- Show / hide password ---------- */
         document.querySelectorAll("[data-toggle-password]").forEach(function (btn) {
             btn.addEventListener("click", function () {

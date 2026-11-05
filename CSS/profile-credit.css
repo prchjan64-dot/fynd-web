@@ -394,3 +394,62 @@
     max-width: 260px;
     margin-top: 8px;
 }
+
+/* FYND payment confirmation popup */
+.credit-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.credit-confirm-overlay[hidden] {
+    display: none !important;
+}
+
+.credit-confirm-dialog {
+    width: 100%;
+    max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 28px;
+    border: 1px solid #e6e6e1;
+    border-radius: 24px;
+    background: #fff;
+    color: #0d0d0d;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.credit-confirm-dialog h2 {
+    margin: 0 0 20px;
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.credit-confirm-dialog button {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 12px;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 999px;
+    background: #c9f23a;
+    color: #0d0d0d;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.credit-confirm-dialog #cancelPayment {
+    background: #f1f1ea;
+}
+
+.credit-confirm-dialog #confirmError {
+    color: #b42318;
+    font-size: 13px;
+    line-height: 1.5;
+}
