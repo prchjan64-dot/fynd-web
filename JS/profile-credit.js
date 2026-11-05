@@ -1,4 +1,3 @@
-
 /* FYND Credit — xendit Checkout */
 (() => {
   'use strict';
@@ -69,12 +68,12 @@
 
   modal.innerHTML = `
     <div class="credit-confirm-dialog">
-      <h2 id="fyndPaymxenditTitle">Confirm wallet top-up</h2>
+      <h2 id="fyndPayxenditTitle">Confirm wallet top-up</h2>
       <p>Payment method: <strong id="fyndPayxenditMethod"></strong></p>
       <p>Amount: <strong id="fyndPayxenditAmount"></strong></p>
       <p id="fyndPayxenditStatus" role="status" aria-live="polite" hidden></p>
       <button type="button" id="fyndPayxenditConfirm">
-        Continue to Payxendit
+        Continue to PayFynd
       </button>
       <button type="button" id="fyndPayxenditCancel">
         Cancel
@@ -207,18 +206,18 @@
 
       const checkout = new URL(json.checkout_url);
 
-if (
-  checkout.protocol !== 'https:' ||
-  !(
-    checkout.hostname === 'checkout.xendit.co' ||
-    checkout.hostname.endsWith('.xendit.co')
-  )
-) {
-  throw new Error('Invalid Xendit checkout URL.');
-}
+      if (
+        checkout.protocol !== 'https:' ||
+        !(
+          checkout.hostname === 'checkout.xendit.co' ||
+          checkout.hostname.endsWith('.xendit.co')
+        )
+      ) {
+        throw new Error('Invalid Xendit checkout URL.');
+      }
 
-modalStatus.textContent = 'Opening Xendit...';
-window.location.assign(checkout.href);
+      modalStatus.textContent = 'Opening Xendit...';
+      window.location.assign(checkout.href);
     } catch (error) {
       modalStatus.textContent =
         error.message || 'Unable to open checkout.';

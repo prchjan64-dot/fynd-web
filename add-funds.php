@@ -1,4 +1,3 @@
-
 <?php
 /* ==========================================================
    add-funds.php
@@ -44,9 +43,11 @@ if ($amount < 1 || $amount > ADD_FUNDS_MAX) {
     );
 }
 
-// Only accept the payment methods supported by the frontend.
-// Xendit checkout availability still depends on your Xendit account.
-$allowedMethods = ['gcash'];
+// Payment methods accepted from the frontend dropdown.
+// These must match the <option value="..."> entries in the top-up form
+// (and the methodNames list in JS/profile-credit.js).
+// Which channels actually appear at checkout depends on your Xendit account.
+$allowedMethods = ['gcash', 'maya', 'bdo', 'bpi', 'metrobank', 'unionbank'];
 
 if (!in_array($method, $allowedMethods, true)) {
     wallet_json(422, false, 'Unsupported payment method.');

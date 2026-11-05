@@ -4,9 +4,9 @@
   /* ---------- Settings (edit these) ---------- */
   const CART_KEY = 'fynd_cart';         // only used when the visitor is not logged in
   const CART_API = 'cart.php';          // the cart of a logged-in user (MySQL: cart_items)
-  const SHIPPING_FEE = 80;
-  const SERVICE_FEE = 20;
-  const CHECKOUT_URL = 'checkout.php';  // your checkout page
+  const SHIPPING_FEE = 80;              // keep in sync with CHECKOUT_SHIPPING_FEE in checkout.php
+  const SERVICE_FEE = 20;               // keep in sync with CHECKOUT_SERVICE_FEE in checkout.php
+  const CHECKOUT_URL = 'checkout.php';  // POST endpoint that pays for the selected items
   const TAG = '[cart]';
 
   /* ---------- Helpers ---------- */
@@ -47,6 +47,7 @@
 
   let items = [];          // the cart lines shown on the page
   let useServer = true;    // false only when the visitor is not logged in
+  let checkingOut = false; // true while a checkout request is running
 
   /* ---------- Server helper ---------- */
   async function api(url, options) {
@@ -76,7 +77,7 @@
     }
 
     if (!res.ok || !data || data.ok !== true) {
-      let message = (data && data.error) || ('HTTP ' + res.status);
+      let message = (data && (data.error || data.message)) || ('HTTP ' + res.status);
       if (data && data.detail) message += ' (' + data.detail + ')';
       const apiError = new Error(message);
       apiError.status = res.status;
@@ -86,8 +87,9 @@
     return data;
   }
 
-  /* A small red message above the cart list when something could not be saved. */
-  function showError(text) {
+  /* A small message above the cart list.
+     Red by default; pass isSuccess = true for a green message. */
+  function showError(text, isSuccess) {
     let box = $('#cartError');
 
     if (!text) {
@@ -99,10 +101,10 @@
       box = document.createElement('p');
       box.id = 'cartError';
       box.setAttribute('role', 'alert');
-      box.style.cssText = 'margin:0 0 12px;color:#b3261e;font-size:14px;';
       list.parentNode.insertBefore(box, list);
     }
 
+    box.style.cssText = 'margin:0 0 12px;font-size:14px;color:' + (isSuccess ? '#1b6e2d' : '#b3261e') + ';';
     box.textContent = text;
   }
 
@@ -224,8 +226,10 @@
     selectAll.indeterminate = picked > 0 && picked < items.length;
     $('#cartSelectAllWrap').hidden = items.length === 0;
     emptyMsg.hidden = items.length > 0;
-    checkoutBtn.disabled = picked === 0;
-    $('#cartCheckoutLabel').textContent = picked ? `Checkout (${picked})` : 'Checkout';
+    checkoutBtn.disabled = picked === 0 || checkingOut;
+    $('#cartCheckoutLabel').textContent = checkingOut
+      ? 'Processing…'
+      : (picked ? `Checkout (${picked})` : 'Checkout');
   }
 
   const itemOf = el => {
@@ -272,11 +276,50 @@
     update();
   });
 
-  checkoutBtn.addEventListener('click', () => {
-    const ids = items.filter(i => i.selected).map(i => i.id);
+  /* ---------- Checkout ----------
+     FIXED: this used to navigate to checkout.php?items=... (a GET request),
+     but checkout.php only accepts POST, so it answered "Use POST."
+     Now the selected product ids are sent with fetch() as a POST. */
+  checkoutBtn.addEventListener('click', async () => {
+    if (checkingOut) return;
+
+    const ids = items
+      .filter(i => i.selected)
+      .map(i => parseInt(i.id, 10))
+      .filter(id => id > 0);
+
     if (!ids.length) return;
-    const qs = new URLSearchParams({ items: ids.join(',') });
-    window.location.href = `${CHECKOUT_URL}?${qs}`;
+
+    checkingOut = true;
+    showError('');
+    update();
+
+    try {
+      const data = await api(CHECKOUT_URL, {
+        method: 'POST',
+        body: { items: ids }
+      });
+
+      showError(
+        (data.message || 'Payment successful!') +
+        (data.order_id ? ' Order #' + data.order_id + '.' : ''),
+        true
+      );
+
+      await loadItems();   // the purchased items are gone from the cart now
+
+      /* Reload so the wallet balance on the Profile and Credit tabs refreshes.
+         The #cart hash keeps the Cart tab open. */
+      setTimeout(() => {
+        window.location.hash = 'cart';
+        window.location.reload();
+      }, 1800);
+    } catch (e) {
+      console.error(TAG, e.message);
+      showError('Checkout failed: ' + e.message);
+      checkingOut = false;
+      update();
+    }
   });
 
   /* Cart changed in another tab */

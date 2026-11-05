@@ -1,0 +1,35 @@
+# Python environment and installed packages
+python/Lib/
+python/Scripts/
+python/Include/
+python/ share/
+python/pip/
+python/requests/
+python/urllib3/
+python/pymysql/
+python/flask/
+python/werkzeug/
+python/jinja2/
+python/itsdangerous/
+python/idna/
+python/certifi/
+python/charset_normalizer/
+python/click/
+python/dotenv/
+python/waitress/
+python/markupsafe/
+python/*.dist-info/
+python/pyvenv.cfg
+__pycache__/
+**/__pycache__/
+
+# Secrets and environment files
+.env
+.env.*
+!.env.example
+fynd-xendit-secrets.php
+mail_config.php
+
+# Local files
+.vscode/
+uploads/

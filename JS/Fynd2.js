@@ -31,7 +31,7 @@
     var pythonSearchResults = null;
     var pythonSearchTerm = '';
     var pythonSearchRequest = 0;
-    
+
     var state = 'loading';
     var errorText = '';
     var inFlight = false;
@@ -172,8 +172,13 @@
         });
     }
 
-    function isLoggedIn() {
-        /* session.php lives in the FYND folder (next to Fynd2.html), not in PHP/ */
+    /* Asks session.php who is logged in.
+       session.php answers like this:
+         { "loggedIn": true, "user": { "id": 1, "name": "...", "email": "..." } }
+         { "loggedIn": false }
+       Resolves to { loggedIn: true/false, email: 'lowercase email or empty' }.
+       session.php lives in the FYND folder (next to Fynd2.html), not in PHP/ */
+    function getSession() {
         return fetch('session.php', {
             credentials: 'same-origin',
             cache: 'no-store',
@@ -185,11 +190,32 @@
                 return res.json();
             })
             .then(function (data) {
-                return !!(data && data.loggedIn === true);
+                var loggedIn = !!(data && data.loggedIn === true);
+                var email = '';
+
+                if (loggedIn) {
+                    /* the email is inside "user" */
+                    if (data.user && data.user.email) {
+                        email = String(data.user.email);
+                    } else if (data.email) {
+                        email = String(data.email);
+                    }
+                }
+
+                return {
+                    loggedIn: loggedIn,
+                    email: email.trim().toLowerCase()
+                };
             })
             .catch(function () {
-                return false;
+                return { loggedIn: false, email: '' };
             });
+    }
+
+    function isLoggedIn() {
+        return getSession().then(function (session) {
+            return session.loggedIn;
+        });
     }
 
     /* ---------- FAVORITES: browser storage (visitors who are not logged in) ---------- */
@@ -803,7 +829,7 @@
         lightboxImg.alt = '';
         lightboxImg.draggable = false;
 
-        /* CHANGED: the photo is not a "close" area, so no zoom-out cursor on it */
+        /* the photo is not a "close" area, so no zoom-out cursor on it */
         lightboxImg.style.cursor = 'default';
 
         lightboxImg.addEventListener('error', function () {
@@ -852,7 +878,7 @@
                 return;
             }
 
-            /* CHANGED: clicking the photo itself keeps the viewer open */
+            /* clicking the photo itself keeps the viewer open */
             if (event.target === lightboxImg) {
                 return;
             }
@@ -1936,7 +1962,9 @@
     /* The quantity selector was removed, so an order is always 1 item. */
     var checkoutQty = 1;
 
-    /* Change these fees if your project uses different amounts. */
+    /* Change these fees if your project uses different amounts.
+       Keep them the same as CHECKOUT_SHIPPING_FEE and CHECKOUT_SERVICE_FEE
+       in checkout.php. */
     var SHIPPING_FEE = 80;
     var SERVICE_FEE = 20;
 
@@ -2042,6 +2070,12 @@
             checkoutStatus.textContent = '';
         }
 
+        /* A previous purchase leaves the button disabled
+           (so it cannot be double clicked). Turn it back on for this item. */
+        if (checkoutSubmit) {
+            checkoutSubmit.disabled = false;
+        }
+
         updateCheckoutSummary();
 
         /* Switch dialogs: details closes, checkout opens. */
@@ -2092,74 +2126,60 @@
             }
         });
 
-       
-if (checkoutSubmit) {
-    checkoutSubmit.addEventListener('click', async function (event) {
-        event.preventDefault();
+        /* CHECKOUT BUTTON: pays for the item with the FYND Wallet.
+           (Cash on Delivery was removed, so wallet is the only method.) */
+        if (checkoutSubmit) {
+            checkoutSubmit.addEventListener('click', async function (event) {
+                event.preventDefault();
 
-        if (!currentProduct) {
-            return;
+                if (!currentProduct) {
+                    return;
+                }
+
+                var checkoutStatus = checkoutElement('checkout-status');
+                var purchased = false;
+
+                if (checkoutStatus) {
+                    checkoutStatus.textContent = 'Processing your order...';
+                }
+
+                checkoutSubmit.disabled = true;
+
+                try {
+                    var result = await api('checkout.php', {
+                        method: 'POST',
+                        body: {
+                            product_id: Number(currentProduct.id),
+                            quantity: checkoutQty,
+                            payment_method: 'wallet'
+                        }
+                    });
+
+                    purchased = true;
+
+                    if (checkoutStatus) {
+                        checkoutStatus.textContent =
+                            (result.message || 'Order placed successfully.') +
+                            ' Order #' + result.order_id +
+                            ' · Total: ' + peso(result.total_amount) + ' · ';
+
+                        var ordersLink = document.createElement('a');
+                        ordersLink.href = 'profile.html#orders';
+                        ordersLink.textContent = 'View my orders';
+                        checkoutStatus.appendChild(ordersLink);
+                    }
+                } catch (error) {
+                    if (checkoutStatus) {
+                        checkoutStatus.textContent =
+                            error.message || 'Could not place the order. Please try again.';
+                    }
+                } finally {
+                    /* After a successful purchase the button stays disabled,
+                       so a double click cannot buy the same item twice. */
+                    checkoutSubmit.disabled = purchased;
+                }
+            });
         }
-
-        var checkoutStatus = checkoutElement('checkout-status');
-
-        // Read the selected payment method from the checkout modal.
-        var paymentInput = document.querySelector(
-            'input[name="payment_method"]:checked'
-        );
-
-        var paymentMethod = paymentInput
-            ? paymentInput.value.toLowerCase()
-            : '';
-
-        if (!['wallet', 'cod'].includes(paymentMethod)) {
-            if (checkoutStatus) {
-                checkoutStatus.textContent =
-                    'Please select Wallet or Cash on Delivery.';
-            }
-            return;
-        }
-
-        var total =
-            Number(currentProduct.price) * checkoutQty +
-            SHIPPING_FEE +
-            SERVICE_FEE;
-
-        if (checkoutStatus) {
-            checkoutStatus.textContent = 'Processing your order...';
-        }
-
-        checkoutSubmit.disabled = true;
-
-        try {
-           
-         var result = await api('checkout.php', {
-             method: 'POST',
-               body: {
-             product_id: Number(currentProduct.id),
-             quantity: checkoutQty,
-             payment_method: paymentMethod
-    }
-});
-
-
-            if (checkoutStatus) {
-                checkoutStatus.textContent =
-                    (result.message || 'Order placed successfully.') +
-                    ' Order ID: ' + result.order_id +
-                    '. Total: ' + peso(result.total_amount);
-            }
-
-        } catch (error) {
-            if (checkoutStatus) {
-                checkoutStatus.textContent =
-                    error.message || 'Could not place the order. Please try again.';
-            }
-        } finally {
-            checkoutSubmit.disabled = false;
-        }
-    });
-}
     }
 
     /* ---------- CATEGORY FILTERS ----------
@@ -2206,13 +2226,13 @@ if (checkoutSubmit) {
 
         updateFilterButtons();
         render();
-        
+
 
         if (shouldScroll && searchTerm) {
             scrollToProducts();
         }
     }
-    
+
     function searchWithPython() {
         var query = searchInput ? searchInput.value.trim() : '';
         var requestId = ++pythonSearchRequest;
@@ -2382,25 +2402,39 @@ if (checkoutSubmit) {
     }
 
     /* ---------- JOIN US + SELL WITH US (footer) ----------
-       Logged in      -> Seller Studio
-       Not logged in  -> Create Account page (email is carried over) */
+       Join us box (an email is typed):
+         - logged in AND the typed email is the SAME as the email of the
+           account that is logged in            -> Seller Studio
+         - not logged in, or a DIFFERENT email  -> Create Account page
+           (the typed email is carried over)
+       Footer "Sell with us" (no email typed):
+         - logged in      -> Seller Studio
+         - not logged in  -> Create Account page */
 
     var CREATE_ACCOUNT_PAGE = 'create-account.html';
 
     function goToCreateAccountOrStudio(email) {
-        return isLoggedIn().then(function (loggedIn) {
-            if (loggedIn) {
+        return getSession().then(function (session) {
+            var typed = String(email || '').trim().toLowerCase();
+
+            /* Footer link: no email typed, so just check the login. */
+            if (!typed) {
+                window.location.href = session.loggedIn
+                    ? SELL_LOGGED_IN
+                    : CREATE_ACCOUNT_PAGE;
+                return;
+            }
+
+            /* Join us box: only the SAME email as the logged-in
+               account goes to Seller Studio. */
+            if (session.loggedIn && session.email && typed === session.email) {
                 window.location.href = SELL_LOGGED_IN;
                 return;
             }
 
-            var url = CREATE_ACCOUNT_PAGE;
-
-            if (email) {
-                url += '?email=' + encodeURIComponent(email);
-            }
-
-            window.location.href = url;
+            /* Not logged in, or a different email: create an account. */
+            window.location.href =
+                CREATE_ACCOUNT_PAGE + '?email=' + encodeURIComponent(typed);
         });
     }
 

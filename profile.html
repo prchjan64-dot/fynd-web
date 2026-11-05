@@ -23,8 +23,10 @@
     <script src="JS/profile-cart.js" defer></script>
     <!-- Saved tab: shows the items starred on the storefront -->
     <script src="JS/profile-saved.js" defer></script>
-    <!-- Credit tab: add-funds form (load after profile.js and profile-.js) -credit-->
+    <!-- Credit tab: add-funds form (load after profile.js and profile-credit.js) -->
     <script src="JS/profile-credit.js?v=8" defer></script>
+    <!-- Orders tab: shows the real orders of the logged-in user -->
+    <script src="JS/profile-orders.js" defer></script>
      <link rel="icon" type="image/jpeg" href="image/logo2.0.jpg">
 
 
@@ -74,7 +76,7 @@
             </nav>
         </div>
 
-        <!-- Logged-in user + "Log out?" 
+        <!-- Logged-in user + "Log out?" -->
         <a href="signin.html" class="sidebar-account" id="sidebar-account"
            role="button" aria-haspopup="dialog"
            aria-label="Account menu - log out"
@@ -394,6 +396,7 @@
 
         <!-- =================================
              ORDERS VIEW
+             The orders are loaded from orders.php by JS/profile-orders.js
         ================================== -->
         <section
             id="ordersView"
@@ -410,62 +413,7 @@
                     </div>
                 </div>
 
-                <div class="full-order-list">
-
-                    <article class="full-order-item">
-                        <div class="full-order-icon" aria-hidden="true">♧</div>
-
-                        <div class="full-order-details">
-                            <strong>Black Patent Flat Shoes</strong>
-                            <span>Classic Steps · Order #LM-2406</span>
-                        </div>
-
-                        <span class="full-order-status">In Transit</span>
-                        <strong class="full-order-price">₱350</strong>
-
-                        <button class="order-details-button"
-                                type="button"
-                                aria-label="View Black Patent Flat Shoes order details"
-                                aria-expanded="false"
-                                data-order-details="shoes">
-                            ›
-                        </button>
-                    </article>
-
-                    <div class="order-extra-details" data-order-info="shoes" hidden>
-                        <p><strong>Status:</strong> Your order is on its way.</p>
-                        <p><strong>Seller:</strong> Classic Steps</p>
-                        <p><strong>Order number:</strong> #LM-2406</p>
-                    </div>
-
-
-                    <article class="full-order-item">
-                        <div class="full-order-icon" aria-hidden="true">♧</div>
-
-                        <div class="full-order-details">
-                            <strong>Casual Long-Sleeve Shirt</strong>
-                            <span>Fashion Hub · Order #LM-2310</span>
-                        </div>
-
-                        <span class="full-order-status delivered-status">Delivered</span>
-                        <strong class="full-order-price">₱490</strong>
-
-                        <button class="order-details-button"
-                                type="button"
-                                aria-label="View Casual Long-Sleeve Shirt order details"
-                                aria-expanded="false"
-                                data-order-details="shirt">
-                            ›
-                        </button>
-                    </article>
-
-                    <div class="order-extra-details" data-order-info="shirt" hidden>
-                        <p><strong>Status:</strong> This order has been delivered.</p>
-                        <p><strong>Seller:</strong> Fashion Hub</p>
-                        <p><strong>Order number:</strong> #LM-2310</p>
-                    </div>
-
-                </div>
+                <div class="full-order-list" id="ordersList" aria-live="polite"></div>
             </article>
         </section>
 
@@ -548,7 +496,7 @@
                             <span id="cartTotal">₱ 0</span>
                         </div>
 
-                        <button type="button" class="cart-checkout" id="cartCheckout">
+                        <button type="button" class="cart-checkout" >
                             <span id="cartCheckoutLabel">Checkout</span>
                             <span aria-hidden="true">↗</span>
                         </button>

@@ -85,6 +85,13 @@ function wallet_balance(PDO $pdo, $uid)
  * Runs in one DB transaction with the row locked, so two requests
  * at the same time can never overspend. Returns the new balance.
  * Throws RuntimeException('INSUFFICIENT') if it would go below 0.
+ *
+ * FIXED: it can now be called while the caller already has a
+ * transaction open (checkout.php does this). In that case it does
+ * NOT begin/commit/roll back by itself: the caller's transaction
+ * owns the commit or rollback, so the buyer payment, every seller
+ * credit and the order all succeed or fail together.
+ * When no transaction is open it behaves exactly as before.
  */
 function wallet_apply(PDO $pdo, $uid, $delta, $type, $description,
                       $detail = '', $method = '', $status = 'completed')
@@ -95,7 +102,12 @@ function wallet_apply(PDO $pdo, $uid, $delta, $type, $description,
         throw new InvalidArgumentException('Amount cannot be zero.');
     }
 
-    $pdo->beginTransaction();
+    // true only when this function started the transaction itself
+    $ownsTransaction = !$pdo->inTransaction();
+
+    if ($ownsTransaction) {
+        $pdo->beginTransaction();
+    }
 
     try {
         $st = $pdo->prepare('SELECT balance FROM wallets WHERE user_id = ? FOR UPDATE');
@@ -128,11 +140,13 @@ function wallet_apply(PDO $pdo, $uid, $delta, $type, $description,
             number_format($newBalance, 2, '.', ''),
         ]);
 
-        $pdo->commit();
+        if ($ownsTransaction) {
+            $pdo->commit();
+        }
 
         return $newBalance;
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
+        if ($ownsTransaction && $pdo->inTransaction()) {
             $pdo->rollBack();
         }
 

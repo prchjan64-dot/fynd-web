@@ -5,35 +5,38 @@
     const CURRENCY = 'PHP';
     const API_URL = 'listings_api.php';
 
-    /* NEW: wallet endpoints (one shared balance for Credit, Profile and Payouts) */
+    /* wallet endpoints (one shared balance for Credit, Profile and Payouts) */
     const WALLET_URL = 'get-wallet.php';
     const TRANSFER_URL = 'wallet-transfer.php';
+
+    /* NEW: real orders for this seller (items bought from them) */
+    const ORDERS_URL = 'seller-orders.php';
 
     const ALLOWED_CONDITIONS = ['Like new', 'Good', 'Fair'];
     const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
     const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-    /* NEW: most photos per item (the first one is the cover). The same limit
+    /* most photos per item (the first one is the cover). The same limit
        is checked again in listings_api.php (FYND_MAX_PHOTOS). */
     const MAX_IMAGES = 5;
 
-    /* CHANGED: 560 -> 900 so the photos still look sharp when a buyer opens
+    /* 560 -> 900 so the photos still look sharp when a buyer opens
        them full screen. If saving ever says a request is too large, set this
        back to 560. */
     const MAX_IMAGE_EDGE = 900;
     const IMAGE_QUALITY = 0.8;
 
-    /* SAMPLE ORDERS */
-    const ORDERS = [
-        { id: '1043', item: 'Studio Logo Tee', buyer: 'Dana R.', date: 'Oct 18', amount: 34, status: 'pending' },
-        { id: '1042', item: 'Cloudswift 3', buyer: 'Mara L.', date: 'Oct 17', amount: 120, status: 'shipped' },
-        { id: '1041', item: 'Vintage Windbreaker', buyer: 'Kio T.', date: 'Oct 12', amount: 46, status: 'delivered' },
-        { id: '1040', item: 'Canvas Tote', buyer: 'Sam P.', date: 'Oct 9', amount: 18, status: 'delivered' }
-    ];
+    /* ORDERS
+       CHANGED: the sample orders were removed. Orders are loaded from the
+       database (seller-orders.php). */
+    let ORDERS = [];
+    let ordersLoaded = false;
+    let ordersLoading = false;
+    let ordersError = '';
 
     /* PAYOUTS
-       CHANGED: nothing is hardcoded anymore. The balance and the activity
-       list are loaded from the database (get-wallet.php?history=1). */
+       Nothing is hardcoded. The balance and the activity list are loaded
+       from the database (get-wallet.php?history=1). */
     let availableBalance = 0;
     let PAYOUTS = [];
     let walletLoading = false;
@@ -159,11 +162,12 @@
 
     /* LISTINGS API */
     const EMPTY_TEXT = $('#listing-empty').textContent;
+    const ORDER_EMPTY_TEXT = $('#order-empty').textContent;
 
     let listings = [];
     let listingsLoaded = false;
 
-    /* CHANGED: every listing now has "images" (all photos, cover first) */
+    /* every listing has "images" (all photos, cover first) */
     function normalizeListing(raw) {
         let images = Array.isArray(raw.images)
             ? raw.images.map(String).filter(Boolean)
@@ -249,7 +253,7 @@
             });
     }
 
-    /* CHANGED: accepts an optional URL (defaults to the listings API) */
+    /* accepts an optional URL (defaults to the listings API) */
     function postJson(payload, url) {
         return apiRequest(url || API_URL, {
             method: 'POST',
@@ -330,7 +334,7 @@
 
         if (item.size) metaParts.push(item.size);
 
-        /* NEW: shows "3 photos" when an item has more than one */
+        /* shows "3 photos" when an item has more than one */
         if (item.images && item.images.length > 1) {
             metaParts.push(item.images.length + ' photos');
         }
@@ -382,14 +386,117 @@
         empty.hidden = listings.length > 0;
     }
 
-    /* ORDERS */
+    /* ORDERS (NEW: loaded from seller-orders.php) */
+
+    /* database status -> the badge class the CSS already has */
+    function orderBadgeClass(status) {
+        const key = String(status || '').toLowerCase();
+
+        if (key === 'shipped' || key === 'in_transit') return 'shipped';
+        if (key === 'delivered') return 'delivered';
+        if (key === 'cancelled') return 'cancelled';
+
+        /* paid / processing / anything new = waiting to be sent */
+        return 'pending';
+    }
+
+    function orderStatusLabel(status) {
+        const key = String(status || '').toLowerCase();
+
+        if (key === 'in_transit') return 'In transit';
+        if (key === 'paid') return 'Paid';
+
+        return key ? capitalize(key) : 'Paid';
+    }
+
+    function orderDateText(value) {
+        if (!value) return '';
+
+        const when = new Date(String(value).replace(' ', 'T'));
+
+        if (isNaN(when.getTime())) return '';
+
+        return when.toLocaleDateString('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric'
+        });
+    }
+
+    function normalizeOrder(raw) {
+        const items = Array.isArray(raw.items) ? raw.items : [];
+        const first = items[0];
+
+        let title = first ? String(first.name || 'Item') : 'Order';
+
+        if (items.length > 1) {
+            title += ' +' + (items.length - 1) + ' more';
+        }
+
+        return {
+            id: String(raw.id),
+            item: title,
+            image: first ? String(first.image || '') : '',
+            buyer: String(raw.buyer || 'Buyer'),
+            date: orderDateText(raw.created_at),
+            amount: Number(raw.total) || 0,
+            status: String(raw.status || 'paid')
+        };
+    }
+
+    function loadOrders() {
+        if (ordersLoading) return Promise.resolve();
+
+        ordersLoading = true;
+
+        return apiRequest(ORDERS_URL, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(function (data) {
+                ORDERS = (data.orders || []).map(normalizeOrder);
+                ordersLoaded = true;
+                ordersError = '';
+                renderOrders();
+            })
+            .catch(function (error) {
+                console.error('Unable to load orders.', error);
+
+                ordersError =
+                    'We could not load your orders. ' + errorMessage(error);
+
+                renderOrders();
+            })
+            .then(function () {
+                ordersLoading = false;
+            });
+    }
+
     function renderOrders() {
         const list = $('#order-list');
+        const empty = $('#order-empty');
+
         list.textContent = '';
+
+        if (ordersError) {
+            list.hidden = true;
+            empty.textContent = ordersError;
+            empty.hidden = false;
+            return;
+        }
+
+        if (!ordersLoaded) {
+            list.hidden = true;
+            empty.textContent = 'Loading your orders…';
+            empty.hidden = false;
+            return;
+        }
+
+        empty.textContent = ORDER_EMPTY_TEXT;
 
         ORDERS.forEach(function (order) {
             const row = el('li', 'item-row');
-            row.appendChild(buildThumb(order.item));
+            row.appendChild(buildThumb(order.item, order.image));
 
             const info = el('div', 'item-info');
             const nameLine = el('div', 'item-name-line');
@@ -401,8 +508,8 @@
             nameLine.appendChild(
                 el(
                     'span',
-                    'badge badge-' + order.status,
-                    capitalize(order.status)
+                    'badge badge-' + orderBadgeClass(order.status),
+                    orderStatusLabel(order.status)
                 )
             );
 
@@ -412,9 +519,9 @@
                 el(
                     'p',
                     'item-meta',
-                    '#' + order.id + ' · ' +
-                    order.buyer + ' · ' +
-                    order.date
+                    '#FY-' + String(order.id).padStart(4, '0') + ' · ' +
+                    order.buyer +
+                    (order.date ? ' · ' + order.date : '')
                 )
             );
 
@@ -431,7 +538,7 @@
         });
 
         list.hidden = ORDERS.length === 0;
-        $('#order-empty').hidden = ORDERS.length > 0;
+        empty.hidden = ORDERS.length > 0;
     }
 
     /* PAYOUTS */
@@ -441,7 +548,7 @@
         return cell;
     }
 
-    /* NEW: turns one database transaction row into a table row */
+    /* turns one database transaction row into a table row */
     function normalizeTxn(raw) {
         const when = raw.created_at
             ? new Date(String(raw.created_at).replace(' ', 'T'))
@@ -478,7 +585,7 @@
         };
     }
 
-    /* NEW: loads the SAME balance the Credit tab and Profile card use */
+    /* loads the SAME balance the Credit tab and Profile card use */
     function loadWallet() {
         if (walletLoading) return Promise.resolve();
 
@@ -559,7 +666,7 @@
 
             row.appendChild(statusCell);
 
-            /* CHANGED: + for money in, − for money out */
+            /* + for money in, − for money out */
             const amountCell = payoutCell('Amount', 'col-amount');
             amountCell.textContent =
                 (payout.direction === 'out' ? '−' : '+') +
@@ -592,7 +699,7 @@
         const amountMax = $('#transfer-amount-max');
         const amountAvailable = $('#transfer-amount-available');
 
-        /* NEW: stops double-clicks while the server is working */
+        /* stops double-clicks while the server is working */
         let transferring = false;
 
         BANKS.forEach(function (bank, index) {
@@ -858,7 +965,7 @@
             const amount = Math.round(Number(amountInput.value.trim()) * 100) / 100;
             const masked = '••••' + numberInput.value.trim().slice(-4);
 
-            /* CHANGED: the server deducts the amount from the shared wallet.
+            /* the server deducts the amount from the shared wallet.
                The balance shown here is whatever the server sends back. */
             transferring = true;
             submitButton.disabled = true;
@@ -911,9 +1018,14 @@
             ).hidden = !selected;
         });
 
-        /* NEW: always show the latest balance when Payouts is opened */
+        /* always show the latest balance when Payouts is opened */
         if (tab.dataset.tab === 'payouts') {
             loadWallet();
+        }
+
+        /* NEW: always show the latest orders when Orders is opened */
+        if (tab.dataset.tab === 'orders') {
+            loadOrders();
         }
 
         if (moveFocus) {
@@ -1046,9 +1158,6 @@
             condition: $('#listing-condition')
         };
 
-        /* CHANGED: photo elements. The old single-photo preview elements
-           (listing-image-preview, listing-image-preview-img,
-           listing-image-remove) were replaced by the photo grid. */
         const imageInput = $('#listing-image');
         const imageDropzone = $('#listing-image-dropzone');
         const imageError = $('#listing-image-error');
@@ -1061,10 +1170,9 @@
 
         let editingId = null;
 
-        /* CHANGED: a list of photos instead of one.
-           Each entry is either a saved path ("uploads/abc.jpg") or a new
-           photo that is not saved yet (a "data:" string).
-           The FIRST one is the cover. */
+        /* a list of photos. Each entry is either a saved path
+           ("uploads/abc.jpg") or a new photo that is not saved yet
+           (a "data:" string). The FIRST one is the cover. */
         let images = [];
 
         let imageToken = 0;
@@ -1248,7 +1356,7 @@
             });
         }
 
-        /* CHANGED: handles one OR many files (browse or drag and drop) */
+        /* handles one OR many files (browse or drag and drop) */
         function handleImageFiles(fileList) {
             setImageError('');
 
@@ -1481,7 +1589,7 @@
             setProcessing(false);
             imageInput.value = '';
 
-            /* CHANGED: start with every photo the item already has */
+            /* start with every photo the item already has */
             if (item && item.images && item.images.length) {
                 images = item.images.slice();
             } else if (item && item.image) {
@@ -1571,7 +1679,7 @@
                 return;
             }
 
-            /* CHANGED: sends every photo (cover first) as "images".
+            /* sends every photo (cover first) as "images".
                "image" (the cover) is still sent for older code. */
             const values = {
                 title: fields.title.value.trim(),
@@ -1691,15 +1799,24 @@
     setupTransfer();
     setupListingDialog();
 
-    /* NEW: load the shared wallet balance + activity, and keep it fresh */
+    /* load the shared wallet balance + activity, and keep it fresh */
     loadWallet();
 
+    /* NEW: load the real orders, and keep them fresh */
+    loadOrders();
+
     document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) loadWallet();
+        if (!document.hidden) {
+            loadWallet();
+            loadOrders();
+        }
     });
 
     window.addEventListener('pageshow', function (event) {
-        if (event.persisted) loadWallet();
+        if (event.persisted) {
+            loadWallet();
+            loadOrders();
+        }
     });
 
     showListingsMessage('Loading your listings…');

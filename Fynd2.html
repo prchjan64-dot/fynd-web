@@ -12,7 +12,7 @@
 
    <link rel="stylesheet" href="CSS/style.css?v=22">
     <link rel="icon" type="image/jpeg" href="image/logo2.0.jpg">
-    <script src="JS/Fynd2.js?v=17" defer></script>
+    <script src="JS/Fynd2.js?v=19" defer></script>
 
     <!-- NEW: LOADING SCREEN (step 1 of 3).
          Runs immediately. If the visitor already saw the loader during this
@@ -128,6 +128,49 @@
             #fynd-loader {
                 transition: none;
             }
+        }
+    </style>
+
+    <!-- Checkout: payment method styling (placed last so it overrides style.css) -->
+    <style>
+        .checkout-payment {
+            margin: 22px 0 20px;
+        }
+
+        .checkout-payment h3 {
+            margin: 0 0 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #0B1440;
+        }
+
+        .checkout-payment label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border: 1.5px solid #86A9DE;
+            border-radius: 14px;
+            background: #ffffff;
+            color: #0B1440;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .checkout-payment input[type="radio"] {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: #162660;
+        }
+
+        /* stops the button text from turning blue when clicked or dragged over */
+        .checkout-submit {
+            user-select: none;
+            -webkit-user-select: none;
         }
     </style>
 </head>
@@ -296,8 +339,8 @@
                 <div class="right">
                     <p>Get one thoughtful note every Friday: new drops, seller stories, and pieces we can't stop
                         thinking about.</p>
-                    <!-- CHANGED: Join us now sends the visitor to Create Account
-                         (or to Seller Studio if they are already logged in). -->
+                    <!-- Join us: if the typed email is the SAME as the logged-in account,
+                         it goes to Seller Studio. Any other email goes to Create Account. -->
                     <form class="subscribe" id="join-form" novalidate>
                         <input type="email" id="join-email" name="email" placeholder="Your email address"
                             aria-label="Your email address" autocomplete="email" required>
@@ -319,7 +362,6 @@
                 <div class="links">
                     <a href="#products">Shop</a>
                     <a href="#">About FYND</a>
-                    <!-- CHANGED: added id so the script can check if the visitor is logged in -->
                     <a href="create-account.html" id="footer-sell-link">Sell with us</a>
                     <a href="profile.html">Your dashboard</a>
                 </div>
@@ -526,25 +568,19 @@
                 <p class="summary-note">
                     Shipping and service fees are estimates.
                 </p>
-                
+
+                <!-- Payment: FYND Wallet only (Cash on Delivery was removed) -->
                 <div class="checkout-payment">
-                <h3>Payment Method</h3>
+                    <h3>Payment Method</h3>
 
-                <label>
-                 <input type="radio"
-                  name="payment_method"
-                  value="wallet"
-                  checked>
-                <span>FYND Wallet</span>
-                </label>
-
-                <label>
-                 <input type="radio"
-                  name="payment_method"
-                  value="cod">
-                  <span>Cash on Delivery (COD)</span>
-                   </label>
-                    </div>
+                    <label>
+                        <input type="radio"
+                               name="payment_method"
+                               value="wallet"
+                               checked>
+                        <span>FYND Wallet</span>
+                    </label>
+                </div>
 
 
                 <button type="button"
