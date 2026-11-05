@@ -9,7 +9,7 @@
     const WALLET_URL = 'get-wallet.php';
     const TRANSFER_URL = 'wallet-transfer.php';
 
-    /* NEW: real orders for this seller (items bought from them) */
+    /* real orders for this seller (items bought from them) */
     const ORDERS_URL = 'seller-orders.php';
 
     const ALLOWED_CONDITIONS = ['Like new', 'Good', 'Fair'];
@@ -27,16 +27,17 @@
     const IMAGE_QUALITY = 0.8;
 
     /* ORDERS
-       CHANGED: the sample orders were removed. Orders are loaded from the
-       database (seller-orders.php). */
+       Orders are loaded from the database (seller-orders.php). */
     let ORDERS = [];
     let ordersLoaded = false;
     let ordersLoading = false;
     let ordersError = '';
 
     /* PAYOUTS
-       Nothing is hardcoded. The balance and the activity list are loaded
-       from the database (get-wallet.php?history=1). */
+       Nothing is hardcoded. The balance is loaded from the database
+       (get-wallet.php). The table below the balance shows ONLY the
+       transfers cashed out to a bank or e-wallet (type=payout);
+       top-ups, checkout payments and sales are in the Credit tab. */
     let availableBalance = 0;
     let PAYOUTS = [];
     let walletLoading = false;
@@ -54,6 +55,19 @@
         { name: 'GCash', type: 'wallet' },
         { name: 'Maya', type: 'wallet' }
     ];
+
+    /* transfer limits (wallet-transfer.php and the Python API use the same limits) */
+    const MIN_TRANSFER = 1;
+    const MAX_TRANSFER = 50000;
+
+    /* the "Processing your transfer" screen stays at least this long
+       so it is always seen, even when the server answers instantly */
+    const MIN_LOADING_MS = 1600;
+
+    const RESULT_ICONS = {
+        success: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7.5"></path></svg>',
+        error: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 2.5 20h19z"></path><path d="M12 10v4"></path><path d="M12 17h.01"></path></svg>'
+    };
 
     /* HELPERS */
     const $ = (selector, root) =>
@@ -244,6 +258,8 @@
 
                         failure.status = response.status;
                         failure.detail = data.detail || '';
+                        failure.code = data.code || '';
+                        failure.balance = data.balance;
 
                         throw failure;
                     }
@@ -386,7 +402,7 @@
         empty.hidden = listings.length > 0;
     }
 
-    /* ORDERS (NEW: loaded from seller-orders.php) */
+    /* ORDERS (loaded from seller-orders.php) */
 
     /* database status -> the badge class the CSS already has */
     function orderBadgeClass(status) {
@@ -585,13 +601,14 @@
         };
     }
 
-    /* loads the SAME balance the Credit tab and Profile card use */
+    /* loads the SAME balance the Credit tab and Profile card use,
+       plus ONLY the cash-out transfers (type=payout) for the table */
     function loadWallet() {
         if (walletLoading) return Promise.resolve();
 
         walletLoading = true;
 
-        return apiRequest(WALLET_URL + '?history=1', {
+        return apiRequest(WALLET_URL + '?history=1&type=payout', {
             method: 'GET',
             headers: { 'Accept': 'application/json' }
         })
@@ -682,6 +699,36 @@
 
     /* TRANSFER FUNDS DIALOG */
     function setupTransfer() {
+        /* The result pop-up normally comes from Seller-Studio.html. If an older
+           Seller-Studio.html is still being served, it is created here so the
+           transfer form keeps working instead of breaking. */
+        function ensureResultDialog() {
+            if (document.getElementById('transfer-result-dialog')) return;
+
+            const holder = document.createElement('div');
+
+            holder.innerHTML =
+                '<dialog class="modal result-modal" id="transfer-result-dialog"' +
+                ' aria-labelledby="transfer-result-title"' +
+                ' aria-describedby="transfer-result-message">' +
+                '<div class="result-body" id="transfer-result-body" data-state="success">' +
+                '<span class="result-icon" id="transfer-result-icon" aria-hidden="true"></span>' +
+                '<h3 class="result-title" id="transfer-result-title">Transfer submitted</h3>' +
+                '<p class="result-message" id="transfer-result-message"></p>' +
+                '<dl class="result-details" id="transfer-result-details" hidden></dl>' +
+                '<div class="result-actions">' +
+                '<button type="button" class="ghost-button" id="transfer-result-secondary" hidden>Close</button>' +
+                '<button type="button" class="primary-button" id="transfer-result-primary">Done</button>' +
+                '</div></div></dialog>';
+
+            document.body.appendChild(holder.firstElementChild);
+        }
+
+        ensureResultDialog();
+
+        /* open the browser console (F12) to confirm this build is the one running */
+        console.info('[seller-studio] transfer pop-up build 7 loaded');
+
         const dialog = $('#transfer-dialog');
         const form = $('#transfer-form');
         const openButton = $('#transfer-funds-btn');
@@ -701,6 +748,110 @@
 
         /* stops double-clicks while the server is working */
         let transferring = false;
+
+        /* result pop-up (success / error) */
+        const resultDialog = $('#transfer-result-dialog');
+        const resultBody = $('#transfer-result-body');
+        const resultIcon = $('#transfer-result-icon');
+        const resultTitle = $('#transfer-result-title');
+        const resultMessage = $('#transfer-result-message');
+        const resultDetails = $('#transfer-result-details');
+        const resultPrimary = $('#transfer-result-primary');
+        const resultSecondary = $('#transfer-result-secondary');
+
+        /* what the main button of the pop-up does when it is clicked */
+        let resultAction = null;
+
+        /* PROCESSING: the same pop-up shows a spinner while the server works,
+           then turns into the success / error result */
+        function showLoading() {
+            if (dialog.open) dialog.close();
+
+            resultBody.setAttribute('data-state', 'loading');
+            resultDialog.setAttribute('role', 'alertdialog');
+            resultDialog.setAttribute('aria-busy', 'true');
+
+            resultIcon.innerHTML = '<span class="result-spinner"></span>';
+            resultTitle.textContent = 'Processing your transfer';
+            resultMessage.textContent =
+                'Please wait. Do not close or refresh this page.';
+
+            resultDetails.textContent = '';
+            resultDetails.hidden = true;
+
+            resultAction = null;
+            resultSecondary.hidden = true;
+
+            if (!resultDialog.open) resultDialog.showModal();
+        }
+
+        /* rows = [{ label, value, tone }]  primary = { label, action } */
+        function showResult(state, title, message, rows, primary) {
+            if (dialog.open) dialog.close();
+
+            resultBody.setAttribute('data-state', state);
+            resultDialog.setAttribute('aria-busy', 'false');
+
+            resultDialog.setAttribute(
+                'role',
+                state === 'error' ? 'alertdialog' : 'dialog'
+            );
+
+            resultIcon.innerHTML = RESULT_ICONS[state];
+            resultTitle.textContent = title;
+            resultMessage.textContent = message;
+
+            resultDetails.textContent = '';
+
+            rows.forEach(function (row) {
+                const line = el(
+                    'div',
+                    'result-row' + (row.tone ? ' is-' + row.tone : '')
+                );
+
+                line.appendChild(el('dt', '', row.label));
+                line.appendChild(el('dd', '', row.value));
+                resultDetails.appendChild(line);
+            });
+
+            resultDetails.hidden = rows.length === 0;
+
+            resultPrimary.textContent = primary.label;
+            resultAction = primary.action;
+            resultSecondary.hidden = state !== 'error';
+
+            if (!resultDialog.open) resultDialog.showModal();
+
+            resultPrimary.focus();
+        }
+
+        /* "Try again": back to the form with everything still filled in */
+        function reopenForm() {
+            balanceText.textContent = money2.format(availableBalance);
+            amountAvailable.textContent =
+                'Available: ' + money2.format(availableBalance);
+
+            if (!dialog.open) dialog.showModal();
+
+            amountInput.focus();
+        }
+
+        function showInsufficient(amount, balance) {
+            const shortBy = Math.max(0, (toCents(amount) - toCents(balance)) / 100);
+
+            showResult(
+                'error',
+                'Insufficient funds',
+                'Your available balance is not enough to transfer ' +
+                money2.format(amount) + '.',
+                [
+                    { label: 'Amount to transfer', value: money2.format(amount) },
+                    { label: 'Available balance', value: money2.format(balance) },
+                    { label: 'Short by', value: money2.format(shortBy), tone: 'negative' }
+                ],
+                { label: 'Try again', action: reopenForm }
+            );
+        }
 
         BANKS.forEach(function (bank, index) {
             const label = el('label', 'bank-option');
@@ -840,7 +991,29 @@
                 );
             }
 
+            if (value < MIN_TRANSFER) {
+                return setFieldError(
+                    amountInput,
+                    'The minimum transfer is ' + money2.format(MIN_TRANSFER) + '.'
+                );
+            }
+
+            if (value > MAX_TRANSFER) {
+                return setFieldError(
+                    amountInput,
+                    'The maximum per transfer is ' + money2.format(MAX_TRANSFER) + '.'
+                );
+            }
+
             return setFieldError(amountInput, '');
+        }
+
+        /* true when the typed amount is more than the available balance */
+        function isInsufficient() {
+            const value = Number(amountInput.value.trim());
+
+            return Number.isFinite(value) && value > 0 &&
+                toCents(value) > toCents(availableBalance);
         }
 
         function clearTransferErrors() {
@@ -924,14 +1097,39 @@
 
         $$('[data-dialog-close]', dialog).forEach(function (button) {
             button.addEventListener('click', function () {
-                dialog.close();
+                if (!transferring) dialog.close();
             });
         });
 
         dialog.addEventListener('click', function (event) {
-            if (event.target === dialog) {
+            if (event.target === dialog && !transferring) {
                 dialog.close();
             }
+        });
+
+        /* Escape must not close the form while a transfer is processing */
+        dialog.addEventListener('cancel', function (event) {
+            if (transferring) event.preventDefault();
+        });
+
+        /* Escape must not close the processing screen */
+        resultDialog.addEventListener('cancel', function (event) {
+            if (transferring) event.preventDefault();
+        });
+
+        /* result pop-up buttons */
+        resultPrimary.addEventListener('click', function () {
+            const action = resultAction;
+
+            resultAction = null;
+            resultDialog.close();
+
+            if (action) action();
+        });
+
+        resultSecondary.addEventListener('click', function () {
+            resultAction = null;
+            resultDialog.close();
         });
 
         form.addEventListener('submit', function (event) {
@@ -942,7 +1140,11 @@
             const bankOk = validateBank();
             const nameOk = validateName();
             const numberOk = validateNumber();
-            const amountOk = validateAmount();
+
+            /* too little balance does not stop the submit here: the server
+               checks the balance too, so the processing screen turns into the
+               "Insufficient funds" pop-up like every other result */
+            const amountOk = validateAmount() || isInsufficient();
 
             if (!bankOk || !nameOk || !numberOk || !amountOk) {
                 if (!nameOk) {
@@ -963,43 +1165,118 @@
 
             const bank = selectedBank();
             const amount = Math.round(Number(amountInput.value.trim()) * 100) / 100;
+            const accountName = nameInput.value.trim();
             const masked = '••••' + numberInput.value.trim().slice(-4);
+            const sentTo = bank.name + ' ' + masked + ' · ' + accountName;
+            const startedAt = Date.now();
 
-            /* the server deducts the amount from the shared wallet.
-               The balance shown here is whatever the server sends back. */
+            /* PROCESSING: the pop-up shows a spinner while the server works */
             transferring = true;
-            submitButton.disabled = true;
-            submitButton.textContent = 'Transferring…';
             formError.textContent = '';
+            showLoading();
+
+            /* runs the callback, and never sooner than MIN_LOADING_MS
+               so the processing screen is always seen */
+            function finish(callback) {
+                const wait = Math.max(0, MIN_LOADING_MS - (Date.now() - startedAt));
+
+                window.setTimeout(function () {
+                    transferring = false;
+                    callback();
+                }, wait);
+            }
+
+            function onSuccess(data) {
+                availableBalance = Number(data.balance) || 0;
+                renderPayouts();
+
+                const status = String(data.status || 'pending').toLowerCase();
+                const statusText = capitalize(status);
+                const completed = status === 'completed';
+
+                note.textContent =
+                    'Transfer of ' + money2.format(amount) + ' to ' + bank.name +
+                    ' (' + masked + ') ' + (completed ? 'completed' : 'requested') +
+                    '. Remaining balance: ' + money2.format(availableBalance) +
+                    '. It shows as ' + statusText + ' below.';
+                note.hidden = false;
+
+                const rows = [
+                    { label: 'Amount', value: money2.format(amount) },
+                    { label: 'Sent to', value: sentTo },
+                    { label: 'Remaining balance', value: money2.format(availableBalance) },
+                    { label: 'Status', value: statusText }
+                ];
+
+                /* test mode: be clear that no real money moved */
+                if (data.simulated) {
+                    rows.push({ label: 'Mode', value: 'Test mode · no real money sent' });
+                }
+
+                showResult(
+                    'success',
+                    completed ? 'Transfer completed' : 'Transfer submitted',
+                    completed
+                        ? 'Your transfer was processed and recorded in your Transfer history.'
+                        : 'Your transfer request was received. It stays Pending until it is processed.',
+                    rows,
+                    { label: 'Done', action: null }
+                );
+
+                loadWallet();
+            }
+
+            function onError(error) {
+                console.error('Unable to transfer funds.', error);
+
+                if (error && error.code === 'INSUFFICIENT_FUNDS') {
+                    if (
+                        error.balance !== undefined &&
+                        error.balance !== null &&
+                        Number.isFinite(Number(error.balance))
+                    ) {
+                        availableBalance = Number(error.balance);
+                        renderPayouts();
+                    }
+
+                    loadWallet();
+                    showInsufficient(amount, availableBalance);
+                    return;
+                }
+
+                /* these errors are raised before any money is deducted */
+                const beforeDeduction = error && (
+                    error.status === 400 || error.status === 401 ||
+                    error.status === 422 || error.status === 502
+                );
+
+                showResult(
+                    'error',
+                    'Transfer failed',
+                    errorMessage(error),
+                    [
+                        { label: 'Amount', value: money2.format(amount) },
+                        { label: 'Send to', value: sentTo },
+                        beforeDeduction
+                            ? { label: 'Your balance', value: 'Unchanged' }
+                            : { label: 'Next step', value: 'Check Transfer history before retrying' }
+                    ],
+                    { label: 'Try again', action: reopenForm }
+                );
+
+                loadWallet();
+            }
 
             postJson({
                 bank: bank.name,
-                accountName: nameInput.value.trim(),
+                accountName: accountName,
                 accountNumber: numberInput.value.trim(),
                 amount: amount
             }, TRANSFER_URL)
-                .then(function (data) {
-                    availableBalance = Number(data.balance) || 0;
-                    renderPayouts();
-
-                    note.textContent =
-                        'Transfer of ' + money2.format(amount) + ' to ' + bank.name +
-                        ' (' + masked + ') requested. Remaining balance: ' +
-                        money2.format(availableBalance) +
-                        '. It now shows as Pending below.';
-                    note.hidden = false;
-
-                    dialog.close();
-                    loadWallet();
-                })
-                .catch(function (error) {
-                    formError.textContent = errorMessage(error);
-                })
-                .then(function () {
-                    transferring = false;
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Continue';
-                });
+                .then(
+                    function (data) { finish(function () { onSuccess(data); }); },
+                    function (error) { finish(function () { onError(error); }); }
+                );
         });
     }
 
@@ -1023,7 +1300,7 @@
             loadWallet();
         }
 
-        /* NEW: always show the latest orders when Orders is opened */
+        /* always show the latest orders when Orders is opened */
         if (tab.dataset.tab === 'orders') {
             loadOrders();
         }
@@ -1799,10 +2076,10 @@
     setupTransfer();
     setupListingDialog();
 
-    /* load the shared wallet balance + activity, and keep it fresh */
+    /* load the shared wallet balance + transfer history, and keep it fresh */
     loadWallet();
 
-    /* NEW: load the real orders, and keep them fresh */
+    /* load the real orders, and keep them fresh */
     loadOrders();
 
     document.addEventListener('visibilitychange', function () {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FYND Marketplace</title>
-    <link rel="stylesheet" href="CSS/seller-studio.css?v=4">
+    <link rel="stylesheet" href="CSS/seller-studio.css?v=6">
     <!-- styles for the name display + log-out confirmation (must come after seller-studio.css) -->
     <link rel="stylesheet" href="CSS/user-session.css">
     <link rel="icon" type="image/jpeg" href="image/logo2.0.jpg">
@@ -352,7 +352,8 @@
                 </p>
             </section>
 
-            <!-- Payouts (available balance card + recent payout activity table) -->
+            <!-- Payouts (available balance card + transfer history table).
+                 The table shows ONLY transfers cashed out to a bank or e-wallet. -->
             <section class="panel-card" id="panel-payouts"
                      role="tabpanel" aria-labelledby="tab-payouts" hidden>
 
@@ -383,9 +384,9 @@
 
                 <p class="transfer-note" id="transfer-note" role="status" hidden></p>
 
-                <!-- Recent payout activity -->
+                <!-- Transfer history (cash-outs only) -->
                 <div class="panel-head payout-head">
-                    <h2>Recent payout activity</h2>
+                    <h2>Transfer history</h2>
                 </div>
 
                 <div class="payout-table-wrap" id="payout-table-wrap">
@@ -404,7 +405,7 @@
                 </div>
 
                 <p class="empty-state" id="payout-empty" hidden>
-                    No payouts yet. Your first one appears after an order is completed.
+                    No transfers yet. Cash-outs to a bank or e-wallet will appear here.
                 </p>
             </section>
 
@@ -666,7 +667,31 @@
         </form>
     </dialog>
 
-    <script src="JS/seller-studio.js?v=4" defer></script>
+    <!-- Transfer result pop-up (success or error). Filled in by seller-studio.js -->
+    <dialog class="modal result-modal" id="transfer-result-dialog"
+            aria-labelledby="transfer-result-title"
+            aria-describedby="transfer-result-message">
+        <div class="result-body" id="transfer-result-body" data-state="success">
+            <span class="result-icon" id="transfer-result-icon" aria-hidden="true"></span>
+
+            <h3 class="result-title" id="transfer-result-title">Transfer submitted</h3>
+            <p class="result-message" id="transfer-result-message"></p>
+
+            <dl class="result-details" id="transfer-result-details" hidden></dl>
+
+            <div class="result-actions">
+                <button type="button" class="ghost-button" id="transfer-result-secondary" hidden>
+                    Close
+                </button>
+
+                <button type="button" class="primary-button" id="transfer-result-primary">
+                    Done
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <script src="JS/seller-studio.js?v=7" defer></script>
     <!-- Must load AFTER seller-studio.js so the logged-in name always wins -->
     <script src="JS/user-session.js" defer></script>
 </body>
